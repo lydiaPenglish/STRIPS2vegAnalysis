@@ -72,7 +72,10 @@ prairie_pi <-
 ) %>%
   mutate(prairie_cov = pg_cov + pf_cov,
          prairie_pi  = prairie_cov/total_cover) %>%
-  left_join(all_site_info)
+  left_join(all_site_info) %>%
+  mutate(pg_pi_logit      = car::logit(pg_pi),
+         pf_pi_logit      = car::logit(pf_pi),
+         prairie_pi_logit = car::logit(prairie_pi))
 
 weedy_pi <- 
   left_join(
@@ -90,5 +93,8 @@ weedy_pi <-
 ) %>%
   mutate(weed_cov = wa_cov + wp_cov,
          weed_pi  = weed_cov/total_cover) %>%
-  left_join(all_site_info)
+  left_join(all_site_info) %>%
+  mutate(wa_pi_logit   = car::logit(wa_pi),
+         wp_pi_logit   = car::logit(wp_pi),
+         weed_pi_logit = car::logit(weed_pi))
 
