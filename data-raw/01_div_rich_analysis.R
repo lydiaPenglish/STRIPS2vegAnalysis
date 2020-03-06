@@ -147,6 +147,8 @@ performance::check_overdispersion(p_poi)
 p_nb <- glmer.nb(p_rich ~ year + species_seeded + log(acres_in_strips) + age_yrs + 
                    season_seeded +
                    (1|siteID), site_div_rich)     # also singular fit...
+ggResidpanel::resid_panel(p_nb)
+performance::check_model(p_nb)
 
 # going to go ahead with log-transformed count data
 

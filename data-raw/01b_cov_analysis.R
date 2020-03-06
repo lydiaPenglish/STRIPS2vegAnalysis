@@ -36,6 +36,7 @@ anova(p4)
 rand(p4)     # effect matters
 performance::r2(p4)
 performance::check_model(p4)
+performance::compare_performance(p1, p2, p3, p4)
 
 # 1B. Prairie grass - NS
 
