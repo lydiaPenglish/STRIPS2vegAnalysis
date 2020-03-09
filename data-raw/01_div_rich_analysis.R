@@ -65,22 +65,22 @@ anova(b_all, b1) # out!
 # nix size
 b2 <- lmer(beta_div ~ year + species_seeded + 
              season_seeded + (1|siteID), data = site_div_rich)
-anova(b2, b1) # keep!
+anova(b2, b1) # out!
 
 # nix season
-b3 <- lmer(beta_div ~ year + species_seeded + log(acres_in_strips) + 
+b3 <- lmer(beta_div ~ year + species_seeded + 
               (1|siteID), data = site_div_rich)
-anova(b3, b1) # keep! 
+anova(b3, b2) # out! 
 
 performance::compare_performance(b_all, b1, b2, b3)
 
-# final model is b1
-resid_panel(b1)
-summary(b1)
-anova(b1)
-rand(b1) # random effect matters
-performance::check_model(b1)
-performance::r2(b1)
+# final model is b3
+resid_panel(b3)
+summary(b3)
+anova(b3)
+rand(b3) # random effect matters
+performance::check_model(b3)
+performance::r2(b3)
 
 # 2C. Alpha diveristy models
 data("quad_div_rich")
@@ -161,11 +161,13 @@ anova(p1, p_log) # out!
 p2 <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + 
              (1|siteID), site_div_rich)
 anova(p2, p1) # out!
+anova(p2)
 
 # p2 is the final model 
 summary(p2)
 anova(p2)
 performance::check_model(p2)
+performance::r2(p2)
 
 # 3B. Richness of the weedy community
 hist(site_div_rich$w_rich)
@@ -207,7 +209,6 @@ anova(w3, w2)       # out!
 # w3 is the final model
 anova(w3)
 summary(w3)
-# I feel like i need to back-transform these values...
 performance::compare_performance(w_log, w1, w2, w3)  # yup w3 is the best
 performance::r2(w3)                                  # woof fixed effects explain little variation
 performance::check_model(w3)
@@ -240,6 +241,7 @@ anova(ap1, ap2) # idk how this still works, but out!
 ap3 <- lmer(p_rich ~ year + species_seeded +
               (1|quadratID:siteID) + (1|siteID), quad_div_rich)
 anova(ap3, ap2) # keep age...
+anova(ap2)
 
 # model ap2 is the model, but it doesn't converge?
 performance::check_convergence(ap2)           # this says it did converge so...
