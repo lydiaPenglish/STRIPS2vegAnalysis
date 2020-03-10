@@ -1,5 +1,5 @@
 library(lmerTest)
-library(dplyr)
+library(tidyverse)
 library(STRIPS2veg)
 library(ggResidpanel)
 library(performance)
@@ -185,3 +185,41 @@ rand(wa3)                  # hmmm site doesn't matter...should I not include it?
 wa5 <- lm(wa_pi_logit ~ year + species_seeded + age_yrs, weedy_pi)
 summary(wa5)
 anova(wa5)
+
+# ---- prairie vs weedy cover/richness ----
+data("site_div_rich")
+
+pra_vs_wd <- left_join(site_div_rich, prairie_pi)
+
+ggplot(pra_vs_wd, aes(prairie_pi, log(w_rich)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~year)
+
+pw1 <- lmer(log(w_rich) ~ year + prairie_pi + (1|siteID), pra_vs_wd)
+summary(pw1)
+anova(pw1)
+performance::check_model(pw1)
+performance::r2(pw1)
+
+wd_vs_pra <- left_join(site_div_rich, weedy_pi)
+
+ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~year)
+
+wp1 <- lmer(log(p_rich) ~ year + weed_pi + (1|siteID), wd_vs_pra)
+summary(wp1)
+anova(wp1)
+performance::check_model(wp1)
+performance::r2(wp1)
+
+ggplot(site_div_rich, aes(p_rich, w_rich))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~year)
+
+wpr <- lmer(log(w_rich) ~ year + p_rich + (1|siteID), site_div_rich)
+summary(wpr)
+rand(wpr)
