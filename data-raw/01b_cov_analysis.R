@@ -3,6 +3,7 @@ library(tidyverse)
 library(STRIPS2veg)
 library(ggResidpanel)
 library(performance)
+theme_set(theme_bw())
 
 source("data-raw/00b_format_veg_cov_data.R")
 
@@ -189,12 +190,26 @@ anova(wa5)
 # ---- prairie vs weedy cover/richness ----
 data("site_div_rich")
 
+# prairie cover vs weedy richness
 pra_vs_wd <- left_join(site_div_rich, prairie_pi)
 
-ggplot(pra_vs_wd, aes(prairie_pi, log(w_rich)))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  facet_wrap(~year)
+pra_cov <- 
+  ggplot(pra_vs_wd, aes(prairie_pi, w_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.75, 38), label = "R[m]^2 == 0.48", parse = TRUE)+
+  geom_text(aes(0.75, 36.5), label = "p[year] == 0.04", parse = TRUE)+
+  geom_text(aes(0.75, 35), label = "p[cov] < 0.001", parse = TRUE)+
+  labs(x = "Relative Cover",
+       y = "Weed Species Richness",
+       color = "Year sampled",
+       fill = "Year sampled")+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("A. All Prairie")+
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14))
+pra_cov
 
 pw1 <- lmer(log(w_rich) ~ year + prairie_pi + (1|siteID), pra_vs_wd)
 summary(pw1)
@@ -202,12 +217,80 @@ anova(pw1)
 performance::check_model(pw1)
 performance::r2(pw1)
 
+# weedy richness vs prairie grass cov - SIG
+
+pg_cov <- 
+  ggplot(pra_vs_wd, aes(pg_pi, w_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.6, 38), label = "R[m]^2 == 0.31", parse = TRUE)+
+  geom_text(aes(0.6, 36.5), label = "p[year] == 0.02", parse = TRUE)+
+  geom_text(aes(0.6, 35), label = "p[cov] == 0.002", parse = TRUE)+
+  labs(x = "Relative Cover",
+       y = NULL,
+       color = "Year sampled",
+       fill = "Year sampled")+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("B. Grasses")+
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_blank(),
+        axis.title  = element_text(size = 14))
+
+gw1 <- lmer(log(w_rich) ~ year + pg_pi + (1|siteID), pra_vs_wd)
+summary(gw1)
+anova(gw1)
+performance::r2(gw1)
+performance::check_model(gw1)
+
+# weedy richness vs prairie forb cov
+
+pf_cov <- 
+  ggplot(pra_vs_wd, aes(pf_pi, w_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.45, 38), label = "R[m]^2 == 0.14", parse = TRUE)+
+  geom_text(aes(0.45, 36.5), label = "p[year] == 0.002", parse = TRUE)+
+  geom_text(aes(0.45, 35), label = "p[cov] == 0.29", parse = TRUE)+
+  geom_text(aes(0.45, 33.5), label = "p[year*cov] == 0.02", parse = TRUE)+
+  labs(x = "Relative Cover",
+       y = NULL, color = "Year sampled",
+       fill = "Year sampled")+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("C. Forbs")+
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_blank(),
+        axis.title  = element_text(size = 14))
+pf_cov
+library(patchwork)
+pra_cov + pg_cov + pf_cov + plot_layout(guides = 'collect')
+
+fw1 <- lmer(log(w_rich) ~ year*pf_pi + (1|siteID), pra_vs_wd)
+summary(fw1)
+anova(fw1)
+performance::check_model(fw1)
+performance::r2(fw1)
+
+# weed pi vs. richness of prairie species
 wd_vs_pra <- left_join(site_div_rich, weedy_pi)
 
-ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  facet_wrap(~year)
+w_cov <- 
+  ggplot(wd_vs_pra, aes(weed_pi, p_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.7, 35), label = "R[m]^2 == 0.13", parse = TRUE)+
+  geom_text(aes(0.7, 33.5), label = "p[year] == 0.92", parse = TRUE)+
+  geom_text(aes(0.7, 32), label = "p[cov] == 0.04", parse = TRUE)+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("A. All Weeds")+
+  labs(x = "Relative Cover",
+       y = "Prairie Species Richness", 
+       color = "Year sampled",
+       fill = "Year sampled")+
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14))
 
 wp1 <- lmer(log(p_rich) ~ year + weed_pi + (1|siteID), wd_vs_pra)
 summary(wp1)
@@ -215,11 +298,58 @@ anova(wp1)
 performance::check_model(wp1)
 performance::r2(wp1)
 
-ggplot(site_div_rich, aes(p_rich, w_rich))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  facet_wrap(~year)
+# annual weed pi vs prairie richness - NS
 
-wpr <- lmer(log(w_rich) ~ year + p_rich + (1|siteID), site_div_rich)
-summary(wpr)
-rand(wpr)
+aw_cov <- 
+  ggplot(wd_vs_pra, aes(wa_pi, p_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.4, 35), label = "R[m]^2 == 0.02", parse = TRUE)+
+  geom_text(aes(0.4, 33.5), label = "p[year] == 0.76", parse = TRUE)+
+  geom_text(aes(0.4, 32), label = "p[cov] == 0.36", parse = TRUE)+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("B. Annual Weeds")+
+  labs(x = "Relative Cover",
+       y = NULL,
+       color = "Year sampled",
+       fill = "Year sampled")+
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_blank(),
+        axis.title  = element_text(size = 14))
+
+ap1 <- lmer(log(p_rich) ~ year + wa_pi + (1|siteID), wd_vs_pra)
+summary(ap1)
+anova(ap1)
+performance::check_model(ap1)
+performance::r2(ap1)
+
+# perennial weedy pi vs. prairie richness - nearly SIG
+
+pw_cov <- 
+  ggplot(wd_vs_pra, aes(wp_pi, p_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_text(aes(0.45, 35), label = "R[m]^2 == 0.11", parse = TRUE)+
+  geom_text(aes(0.45, 33.5), label = "p[year] == 0.86", parse = TRUE)+
+  geom_text(aes(0.45, 32), label = "p[cov] == 0.05", parse = TRUE)+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  ggtitle("C. Perennial Weeds")+
+  labs(x = "Relative Cover",
+       y = NULL,
+       color = "Year sampled",
+       fill = "Year sampled")+
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_blank(),
+        axis.title  = element_text(size = 14))
+
+pp1 <- lmer(log(p_rich) ~ year + wp_pi + (1|siteID), wd_vs_pra)
+summary(pp1)
+anova(pp1)
+performance::check_model(pp1)
+performance::r2(pp1)
+rand(pp1)
+
+
+w_cov + aw_cov + pw_cov + plot_layout(guides = 'collect')
