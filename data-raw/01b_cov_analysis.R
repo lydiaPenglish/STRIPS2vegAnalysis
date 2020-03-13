@@ -1,3 +1,6 @@
+# Analysis regarding the cover of different functional groups - uses dataframes created in 
+# "00b_format_veg_cov_data.R"
+
 library(lmerTest)
 library(tidyverse)
 library(STRIPS2veg)
@@ -194,14 +197,14 @@ data("site_div_rich")
 pra_vs_wd <- left_join(site_div_rich, prairie_pi)
 
 pra_cov <- 
-  ggplot(pra_vs_wd, aes(prairie_pi, w_rich))+
+  ggplot(pra_vs_wd, aes(prairie_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.75, 38), label = "R[m]^2 == 0.48", parse = TRUE)+
-  geom_text(aes(0.75, 36.5), label = "p[year] == 0.04", parse = TRUE)+
-  geom_text(aes(0.75, 35), label = "p[cov] < 0.001", parse = TRUE)+
+  geom_text(aes(0.75, 3.7), label = "R[m]^2 == 0.48", parse = TRUE)+
+  geom_text(aes(0.75, 3.6), label = "p[year] == 0.04", parse = TRUE)+
+  geom_text(aes(0.75, 3.5), label = "p[cov] < 0.001", parse = TRUE)+
   labs(x = "Relative Cover",
-       y = "Weed Species Richness",
+       y = "log( Weed Species Richness )",
        color = "Year sampled",
        fill = "Year sampled")+
   scale_color_grey(start = 0.3, end = 0.6)+
@@ -220,12 +223,12 @@ performance::r2(pw1)
 # weedy richness vs prairie grass cov - SIG
 
 pg_cov <- 
-  ggplot(pra_vs_wd, aes(pg_pi, w_rich))+
+  ggplot(pra_vs_wd, aes(pg_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.6, 38), label = "R[m]^2 == 0.31", parse = TRUE)+
-  geom_text(aes(0.6, 36.5), label = "p[year] == 0.02", parse = TRUE)+
-  geom_text(aes(0.6, 35), label = "p[cov] == 0.002", parse = TRUE)+
+  geom_text(aes(0.6, 3.7), label = "R[m]^2 == 0.31", parse = TRUE)+
+  geom_text(aes(0.6, 3.6), label = "p[year] == 0.02", parse = TRUE)+
+  geom_text(aes(0.6, 3.5), label = "p[cov] == 0.002", parse = TRUE)+
   labs(x = "Relative Cover",
        y = NULL,
        color = "Year sampled",
@@ -246,13 +249,13 @@ performance::check_model(gw1)
 # weedy richness vs prairie forb cov
 
 pf_cov <- 
-  ggplot(pra_vs_wd, aes(pf_pi, w_rich))+
+  ggplot(pra_vs_wd, aes(pf_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.45, 38), label = "R[m]^2 == 0.14", parse = TRUE)+
-  geom_text(aes(0.45, 36.5), label = "p[year] == 0.002", parse = TRUE)+
-  geom_text(aes(0.45, 35), label = "p[cov] == 0.29", parse = TRUE)+
-  geom_text(aes(0.45, 33.5), label = "p[year*cov] == 0.02", parse = TRUE)+
+  geom_text(aes(0.45, 3.8), label = "R[m]^2 == 0.14", parse = TRUE)+
+  geom_text(aes(0.45, 3.7), label = "p[year] == 0.002", parse = TRUE)+
+  geom_text(aes(0.45, 3.6), label = "p[cov] == 0.29", parse = TRUE)+
+  geom_text(aes(0.45, 3.5), label = "p[year*cov] == 0.02", parse = TRUE)+
   labs(x = "Relative Cover",
        y = NULL, color = "Year sampled",
        fill = "Year sampled")+
@@ -276,17 +279,17 @@ performance::r2(fw1)
 wd_vs_pra <- left_join(site_div_rich, weedy_pi)
 
 w_cov <- 
-  ggplot(wd_vs_pra, aes(weed_pi, p_rich))+
+  ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.7, 35), label = "R[m]^2 == 0.13", parse = TRUE)+
-  geom_text(aes(0.7, 33.5), label = "p[year] == 0.92", parse = TRUE)+
-  geom_text(aes(0.7, 32), label = "p[cov] == 0.04", parse = TRUE)+
+  geom_text(aes(0.7, 3.7), label = "R[m]^2 == 0.13", parse = TRUE)+
+  geom_text(aes(0.7, 3.6), label = "p[year] == 0.92", parse = TRUE)+
+  geom_text(aes(0.7, 3.5), label = "p[cov] == 0.04", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   ggtitle("A. All Weeds")+
   labs(x = "Relative Cover",
-       y = "Prairie Species Richness", 
+       y = "log( Prairie Species Richness)", 
        color = "Year sampled",
        fill = "Year sampled")+
   theme(axis.text  = element_text(size = 12),
@@ -301,12 +304,12 @@ performance::r2(wp1)
 # annual weed pi vs prairie richness - NS
 
 aw_cov <- 
-  ggplot(wd_vs_pra, aes(wa_pi, p_rich))+
+  ggplot(wd_vs_pra, aes(wa_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.4, 35), label = "R[m]^2 == 0.02", parse = TRUE)+
-  geom_text(aes(0.4, 33.5), label = "p[year] == 0.76", parse = TRUE)+
-  geom_text(aes(0.4, 32), label = "p[cov] == 0.36", parse = TRUE)+
+  geom_text(aes(0.4, 3.7), label = "R[m]^2 == 0.02", parse = TRUE)+
+  geom_text(aes(0.4, 3.6), label = "p[year] == 0.76", parse = TRUE)+
+  geom_text(aes(0.4, 3.5), label = "p[cov] == 0.36", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   ggtitle("B. Annual Weeds")+
@@ -327,12 +330,12 @@ performance::r2(ap1)
 # perennial weedy pi vs. prairie richness - nearly SIG
 
 pw_cov <- 
-  ggplot(wd_vs_pra, aes(wp_pi, p_rich))+
+  ggplot(wd_vs_pra, aes(wp_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.45, 35), label = "R[m]^2 == 0.11", parse = TRUE)+
-  geom_text(aes(0.45, 33.5), label = "p[year] == 0.86", parse = TRUE)+
-  geom_text(aes(0.45, 32), label = "p[cov] == 0.05", parse = TRUE)+
+  geom_text(aes(0.45, 3.7), label = "R[m]^2 == 0.11", parse = TRUE)+
+  geom_text(aes(0.45, 3.6), label = "p[year] == 0.86", parse = TRUE)+
+  geom_text(aes(0.45, 3.5), label = "p[cov] == 0.05", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   ggtitle("C. Perennial Weeds")+

@@ -273,16 +273,16 @@ plot_pr <-
 
 gg_pr_pi <-
   sub_cov_p %>%
-  select(pf_pi, pg_pi, prairie_pi, season_seeded) %>%
+  select(pf_pi_logit, pg_pi_logit, prairie_pi_logit, season_seeded) %>%
   group_by(season_seeded) %>%
-  summarize(avg_pf_pi = mean(pf_pi),
-            sd_pf_pi  = sd(pf_pi),
+  summarize(avg_pf_pi = mean(pf_pi_logit),
+            sd_pf_pi  = sd(pf_pi_logit),
             se_pf_pi  = sd_pf_pi/sqrt(2),
-            avg_pg_pi = mean(pg_pi),
-            sd_pg_pi  = sd(pg_pi),
+            avg_pg_pi = mean(pg_pi_logit),
+            sd_pg_pi  = sd(pg_pi_logit),
             se_pg_pi  = sd_pg_pi/sqrt(2),
-            avg_pra_pi = mean(prairie_pi),
-            sd_pra_pi  = sd(prairie_pi),
+            avg_pra_pi = mean(prairie_pi_logit),
+            sd_pra_pi  = sd(prairie_pi_logit),
             se_pra_pi  = sd_pra_pi/sqrt(2)) %>%
   mutate(sig_level_pf  = c("a", "b", "c"),
          sig_level_pra = c("a", "a", "b"),
@@ -291,13 +291,13 @@ gg_pr_pi <-
 
 plot_pf <- 
   ggplot(gg_pr_pi, aes(season_seeded, avg_pf_pi))+
-  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_point(aes(color = season_seeded), stat = "identity", fill = "white", size = 6)+
   geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi,
                     ymax = avg_pf_pi + se_pf_pi),
-                width = 0.05, size = 1)+
-  geom_text(aes(season_seeded, y = .15 + avg_pf_pi, label = sig_level_pf), size = 5)+
+                width = 0.06, size = 1)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5)+
   scale_color_grey(start = 0.2, end = 0.7)+
-  scale_y_continuous(limits = c(0, 1))+
+  scale_y_continuous(limits = c(-2.5, 2))+
   ggtitle("B. Forbs")+
   guides(color = FALSE)+
   labs(x = NULL, 
@@ -305,14 +305,15 @@ plot_pf <-
   theme(axis.text.x = element_text(size = 14),
         axis.text.y = element_blank(),
         plot.title  = element_text(size = 18))
+plot_pf
 plot_pg <- 
   ggplot(gg_pr_pi, aes(season_seeded, avg_pg_pi))+
-  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_point(aes(color = season_seeded), stat = "identity", fill = "white", size = 6)+
   geom_errorbar(aes(ymin = avg_pg_pi - se_pg_pi,
                     ymax = avg_pg_pi + se_pg_pi),
-                width = 0.05, size = 1)+
+                width = 0.06, size = 1)+
   scale_color_grey(start = 0.2, end = 0.7)+
-  scale_y_continuous(limits = c(0, 1))+
+  scale_y_continuous(limits = c(-2.5, 2))+
   ggtitle("C. Grasses")+
   guides(color = FALSE)+
   labs(x = NULL, 
@@ -322,17 +323,17 @@ plot_pg <-
         plot.title  = element_text(size = 18))
 plot_pra <- 
   ggplot(gg_pr_pi, aes(season_seeded, avg_pra_pi))+
-  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_point(aes(color = season_seeded), stat = "identity", fill = "white", size = 6)+
   geom_errorbar(aes(ymin = avg_pra_pi - se_pra_pi,
                     ymax = avg_pra_pi + se_pra_pi),
-                width = 0.05, size = 1)+
-  geom_text(aes(season_seeded, y = .15 + avg_pra_pi, label = sig_level_pra), size = 5)+
+                width = 0.06, size = 1)+
+  geom_text(aes(season_seeded, y = .6 + abs(avg_pra_pi), label = sig_level_pra), size = 5)+
   scale_color_grey(start = 0.2, end = 0.7)+
-  scale_y_continuous(limits = c(0, 1))+
+  scale_y_continuous(limits = c(-2.5, 2))+
   ggtitle("A. All Prairie")+
   guides(color = FALSE)+
   labs(x = NULL, 
-       y = "Relative cover") +
+       y = "logit (Relative cover)") +
   theme(axis.title.y = element_text(size = 18),
         axis.text    = element_text(size = 14),
         plot.title  = element_text(size = 18))
