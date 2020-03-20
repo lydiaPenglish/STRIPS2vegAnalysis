@@ -281,11 +281,10 @@ wd_vs_pra <- left_join(site_div_rich, weedy_pi)
 w_cov <- 
   ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.7, 3.7), label = "R[m]^2 == 0.13", parse = TRUE)+
   geom_text(aes(0.7, 3.6), label = "p[year] == 0.92", parse = TRUE)+
   geom_text(aes(0.7, 3.5), label = "p[cov] == 0.04", parse = TRUE)+
-  scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   ggtitle("A. All Weeds")+
   labs(x = "Relative Cover",
@@ -294,7 +293,7 @@ w_cov <-
        fill = "Year sampled")+
   theme(axis.text  = element_text(size = 12),
         axis.title = element_text(size = 14))
-
+w_cov
 wp1 <- lmer(log(p_rich) ~ year + weed_pi + (1|siteID), wd_vs_pra)
 summary(wp1)
 anova(wp1)
@@ -306,7 +305,7 @@ performance::r2(wp1)
 aw_cov <- 
   ggplot(wd_vs_pra, aes(wa_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.4, 3.7), label = "R[m]^2 == 0.02", parse = TRUE)+
   geom_text(aes(0.4, 3.6), label = "p[year] == 0.76", parse = TRUE)+
   geom_text(aes(0.4, 3.5), label = "p[cov] == 0.36", parse = TRUE)+
@@ -332,7 +331,7 @@ performance::r2(ap1)
 pw_cov <- 
   ggplot(wd_vs_pra, aes(wp_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color = year), method = "lm", se = FALSE, lty = 2)+
+  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.45, 3.7), label = "R[m]^2 == 0.11", parse = TRUE)+
   geom_text(aes(0.45, 3.6), label = "p[year] == 0.86", parse = TRUE)+
   geom_text(aes(0.45, 3.5), label = "p[cov] == 0.05", parse = TRUE)+
