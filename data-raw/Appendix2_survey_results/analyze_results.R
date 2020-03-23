@@ -50,9 +50,10 @@ q1 <- all_surv %>%
   ggtitle("A. Grasses")+
   guides(color = FALSE)+
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
+  scale_y_continuous(breaks = c(0, 5, 10, 15))+
   theme(axis.text.x = element_text(size = rel(1.5)),
         axis.text.y = element_text(size = rel(1.25))) 
- 
+q1 
 # Question 2. Number of forbs sepcies identified
 forb_change <- 
   all_surv %>%
@@ -84,6 +85,52 @@ q2 <-
         axis.text.y = element_text(size = rel(1.25))) 
 
 q1 + q2
+
+# Question 3 - interest in prairie species identication
+
+q3 <- 
+  all_surv %>%
+  ggplot(aes(interestScale))+
+  geom_histogram(binwidth = 0.5, fill = "grey", color = "black")+
+  labs(x = "Interest Scale",
+       y = "# of Respondents")+
+  facet_wrap(~surv)+
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10))+
+  theme(axis.text  = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.4)),
+        strip.background = element_rect(fill = "white"),
+        strip.text = element_text(size = rel(1.5)))
+
+# Question 4 - methods to identify plants
+
+q4_df <- 
+  all_surv %>%
+  pivot_longer(cols = c(stratA:stratE), names_to = "strategy_type", values_to = "pref") %>%
+  select(survey_code, surv, strategies, strategy_type, pref) 
+
+q4 <- 
+  q4_df %>%
+  ggplot(aes(strategy_type, pref))+
+  geom_col(fill = "grey50")+
+  labs(x = NULL,
+       y = "# of Respondents")+
+  scale_x_discrete(labels = c("Collect samples", 
+                              "Take photos",
+                              "Use a guidebook",
+                              "Consult someone else",
+                              "Consult internet"))+
+  facet_wrap(~surv)+
+  theme(axis.text  = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.4)),
+        strip.background = element_rect(fill = "white"),
+        strip.text = element_text(size = rel(1.5)))+
+  coord_flip()
+
+# Question 5. Favorite prairie plant
+
+favs <- 
+  all_surv %>%
+  select(survey_code, surv, favorite)
 
 # Question 6. Looking at change in ID
  
