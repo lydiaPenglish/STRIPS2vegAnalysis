@@ -4,6 +4,7 @@
 library(STRIPS2veg)       # data
 data("vegetation")
 data("species_list")
+data("all_site_info")
 library(dplyr)
 
 midpoints <- 
@@ -19,6 +20,18 @@ midpoints <-
   select(year:speciesID, midpoint) %>%
   filter(!stringr::str_detect(quadratID, 
                               "bue_2_\\d|isb_2_\\d|stt_[123]_\\d|gos_[^123]_\\d"))
+
+# calculating avg area:perimeter ratio of strips
+data("strips")
+
+pa_rat <- strips %>%
+  mutate(perim_area = perimeter/area) %>%
+  group_by(siteID) %>%
+  summarize(n_strips = n(),
+            avg_p_a  = mean(perim_area))
+
+all_site_info <- left_join(all_site_info, pa_rat)
+
 # wide dataframe
 veg_mid <- 
   midpoints %>%

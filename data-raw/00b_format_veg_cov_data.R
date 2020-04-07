@@ -3,14 +3,41 @@
 library(dplyr)
 library(STRIPS2veg)
 data("species_list")
+data("all_site_info")
+data("strips")
+
+# - caculating perimter area ratio of strips - #
+pa_rat <- strips %>%
+  mutate(perim_area = perimeter/area) %>%
+  group_by(siteID) %>%
+  summarize(n_strips = n(),
+            avg_p_a  = mean(perim_area))
+
+all_site_info <- left_join(all_site_info, pa_rat)
 
 # - groups of codes for different functional groups - #
 nat_grass <- species_list %>%
   filter(group == "prairie C4 grass"|group == "prairie C3 grass"|group == "prairie sedge")%>%
   select(speciesID)%>%
   unlist()
+nat_grass_c4 <- species_list %>%
+  filter(group == "prairie C4 grass")%>%
+  select(speciesID)%>%
+  unlist()
+nat_grass_c3 <- species_list %>%
+  filter(group == "prairie C3 grass")%>%
+  select(speciesID)%>%
+  unlist()
 nat_forbs <- species_list %>%
   filter(group == "prairie forb")%>%
+  select(speciesID)%>%
+  unlist()
+legumes <- species_list %>%
+  filter(group == "prairie forb" & family == "fabaceae")%>%
+  select(speciesID)%>%
+  unlist()
+nl_forbs <- species_list %>%
+  filter(group == "prairie forb" & family != "fabaceae")%>%
   select(speciesID)%>%
   unlist()
 weed_annuals <- species_list %>% # 5 letter codes for weedy species
@@ -48,34 +75,67 @@ get_cov <- function(group, data = veg_mid){
   return(dd)
 }
 
-grass_cov <- get_cov(group = nat_grass) %>% left_join(all_site_info)
-forb_cov  <- get_cov(group = nat_forbs) %>% left_join(all_site_info)
-nat_cov   <- get_cov(group = nat_codes) %>% left_join(all_site_info)
-pw_cov    <- get_cov(group = weed_perenn) %>% left_join(all_site_info)
-aw_cov    <- get_cov(group = weed_annuals) %>% left_join(all_site_info)
-weed_cov  <- get_cov(group = weeds) %>% left_join(all_site_info)
+grass_cov   <- get_cov(group = nat_grass) %>% left_join(all_site_info)
+c4grass_cov <- get_cov(group = nat_grass_c4) %>% left_join(all_site_info)
+c3grass_cov <- get_cov(group = nat_grass_c3) %>% left_join(all_site_info)
+forb_cov    <- get_cov(group = nat_forbs) %>% left_join(all_site_info)
+legume_cov  <- get_cov(group = legumes) %>% left_join(all_site_info)
+nonleg_cov  <- get_cov(group = nl_forbs) %>% left_join(all_site_info)
+nat_cov     <- get_cov(group = nat_codes) %>% left_join(all_site_info)
+pw_cov      <- get_cov(group = weed_perenn) %>% left_join(all_site_info)
+aw_cov      <- get_cov(group = weed_annuals) %>% left_join(all_site_info)
+weed_cov    <- get_cov(group = weeds) %>% left_join(all_site_info)
 
 # relative cover of each functional group
+pg <- veg_site %>%
+  filter(speciesID %in% nat_grass) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(pg_cov = sum(cov)) %>%
+  mutate(pg_pi = pg_cov/total_cover)
+pf <- veg_site %>%
+  filter(speciesID %in% nat_forbs) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(pf_cov = sum(cov)) %>%
+  mutate(pf_pi = pf_cov/total_cover)
+c4 <- veg_site %>%
+  filter(speciesID %in% nat_grass_c4) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(c4_cov = sum(cov)) %>%
+  mutate(c4_pi = c4_cov/total_cover)
+c3 <- veg_site %>%
+  filter(speciesID %in% nat_grass_c3) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(c3_cov = sum(cov)) %>%
+  mutate(c3_pi = c3_cov/total_cover)
+leg <- veg_site %>%
+  filter(speciesID %in% legumes) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(leg_cov = sum(cov)) %>%
+  mutate(leg_pi = leg_cov/total_cover)
+nl <- veg_site %>%
+  filter(speciesID %in% nl_forbs) %>%
+  group_by(year, siteID, total_cover) %>%
+  summarize(nl_cov = sum(cov)) %>%
+  mutate(nl_pi = nl_cov/total_cover)
+
 prairie_pi <- 
-  left_join(
-    veg_site %>%
-    filter(speciesID %in% nat_grass) %>%
-    group_by(year, siteID, total_cover) %>%
-    summarize(pg_cov = sum(cov)) %>%
-    mutate(pg_pi = pg_cov/total_cover)
-  ,
-    veg_site %>%
-    filter(speciesID %in% nat_forbs) %>%
-    group_by(year, siteID, total_cover) %>%
-    summarize(pf_cov = sum(cov)) %>%
-    mutate(pf_pi = pf_cov/total_cover)
-) %>%
+  left_join(pg, pf) %>%
+  left_join(c3) %>%
+  left_join(c4) %>%
+  left_join(leg) %>%
+  left_join(nl) %>%
   mutate(prairie_cov = pg_cov + pf_cov,
          prairie_pi  = prairie_cov/total_cover) %>%
-  left_join(all_site_info) %>%
+  # make sure can take logit...
+  replace(., is.na(.), 0.0001) %>%
   mutate(pg_pi_logit      = car::logit(pg_pi),
          pf_pi_logit      = car::logit(pf_pi),
-         prairie_pi_logit = car::logit(prairie_pi))
+         prairie_pi_logit = car::logit(prairie_pi),
+         c4_pi_logit      = car::logit(c4_pi),
+         c3_pi_logit      = car::logit(c3_pi),
+         leg_pi_logit     = car::logit(leg_pi),
+         nl_pi_logit      = car::logit(nl_pi)) %>%
+  left_join(all_site_info)
 
 weedy_pi <- 
   left_join(

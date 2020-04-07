@@ -10,13 +10,27 @@ theme_set(theme_bw())
 
 source("data-raw/00b_format_veg_cov_data.R")
 
-# Modeling avg cover of prairie grasses, prairie forbs, annual weeds, and perennial weeds
+# Modeling avg cover of ...
+# 1. All prairie spp
+# 2. Prairie grasses (and then C3 vs C4 grass)
+# 3. Prairie forbs (and then leguminous vs non-leguminous forbs)
+# 4. All weedy spp
+# 5. Perennial weeds 
+# 6. Annual weeds
 
-# 1A. All prairie spp - NS
+# ---- 1. all prairie spp - NS ----
 
-p1 <- lmer(prairie_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+p0 <- lmer(prairie_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + season_seeded + 
              (1|siteID), prairie_pi)
-summary(p1)
+summary(p0)
+anova(p0)
+
+# nix p_a ratio
+p1 <- lmer(prairie_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + season_seeded + 
+             (1|siteID), prairie_pi)
+anova(p0, p1)    # out! 
 anova(p1)
 
 # nix age
@@ -42,17 +56,30 @@ performance::r2(p4)
 performance::check_model(p4)
 performance::compare_performance(p1, p2, p3, p4)
 
-# 1B. Prairie grass - NS
+# ---- 2. Prairie grass ----
 
-g1 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+# A. all prairie grass
+
+g0 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + season_seeded + 
              (1|siteID), prairie_pi)
-summary(g1)
-anova(g1)
+summary(g0)
+anova(g0)
 
 # nix season
-g2 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) +
+g1 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) +
              (1|siteID), prairie_pi)
-anova(g2, g1)     # out!
+anova(g0, g1)     # out!
+anova(g1)
+
+# nix p_a ratio
+
+g2 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) +
+             (1|siteID), prairie_pi)
+anova(g2, g1)
+anova(g2)
 
 # nix size
 g3 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
@@ -71,16 +98,104 @@ performance::r2(g4)
 rand(g4)
 performance::check_model(g4)
 
-# 1C. Prairie forb 
-
-f1 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+# B. C4 grasses
+c40 <- lmer(c4_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + season_seeded + 
              (1|siteID), prairie_pi)
-anova(f1)
+summary(c40)
+anova(c40)
+
+# nix p_a ratio
+c41 <- lmer(c4_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + season_seeded + 
+              (1|siteID), prairie_pi)
+anova(c41, c40)     # out!
+anova(c41)
+
+# nix season
+c42 <- lmer(c4_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + 
+              (1|siteID), prairie_pi)
+anova(c41, c42)     # out!
+anova(c42)
+
+# nix size 
+c43 <- lmer(c4_pi_logit ~ year + species_seeded + age_yrs + 
+              (1|siteID), prairie_pi)
+anova(c43, c42)     # out!
+anova(c43)
+
+# nix age 
+c44 <- lmer(c4_pi_logit ~ year + species_seeded + 
+              (1|siteID), prairie_pi)
+anova(c43, c44)     # out!
+anova(c44)
+
+# c44 is final model
+rand(c44)
+performance::r2(c44)
+performance::check_model(c44)
+
+# C. C3 grasses
+c30 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + log(avg_p_a) + season_seeded + 
+              (1|siteID), prairie_pi)
+summary(c30)
+anova(c30)
+
+# nix p_a ratio
+c31 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + season_seeded + 
+              (1|siteID), prairie_pi)
+anova(c30, c31)   # out!
+anova(c31)
+
+# nix size 
+c32 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
+              season_seeded + 
+              (1|siteID), prairie_pi)
+anova(c32, c31)   # out!
+anova(c32)
+
+# nix season 
+c33 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
+              (1|siteID), prairie_pi)
+anova(c33, c32)
+anova(c33)
+
+# nix age - barely significant...
+c34 <- lmer(c3_pi_logit ~ year + species_seeded + 
+              (1|siteID), prairie_pi)
+anova(c33, c34)
+anova(c34)
+summary(c34)
+
+# seed mix richness barely significant anymore....
+rand(c34)
+performance::r2(c34)
+performance::check_model(c34)
+
+# ---- 3. Prairie forbs ----
+
+# A. all forbs
+f0 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + season_seeded + 
+             (1|siteID), prairie_pi)
+anova(f0)
 
 # nix size
-f2 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + season_seeded + 
+f1 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + 
+            log(avg_p_a) + season_seeded + 
+            (1|siteID), prairie_pi)
+anova(f0, f1)      # out!
+anova(f1)
+
+# nix ratio
+f2 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + 
+             season_seeded + 
              (1|siteID), prairie_pi)
 anova(f2, f1)      # out!
+anova(f2)
 
 # nix season
 f3 <- lmer(pf_pi_logit ~ year + species_seeded + age_yrs + 
@@ -100,9 +215,98 @@ anova(f4)
 performance::r2(f4)
 performance::check_model(f4)
 
-# 2A. All weedy spp
-w1 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+# B. legumes - significantly go down with age...
+
+ggplot(prairie_pi, aes(age_yrs, car::logit(leg_pi)))+
+  geom_point(aes(color = year), size = 2)+
+  geom_text(aes(color = year, label = siteID))+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE)
+
+l0 <- lmer(leg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + season_seeded + 
+             (1|siteID), prairie_pi)
+anova(l0)
+summary(l0)
+
+# nix p_a ratio
+
+l1 <- lmer(leg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + season_seeded + 
+             (1|siteID), prairie_pi)
+anova(l0, l1)    # out!
+anova(l1)
+
+# nix season 
+l2 <- lmer(leg_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + 
+             (1|siteID), prairie_pi)
+anova(l2, l1)    # out!
+anova(l2)
+
+# nix size
+l3 <- lmer(leg_pi_logit ~ year + species_seeded + age_yrs + 
+             (1|siteID), prairie_pi)
+anova(l2, l3)    # keep!
+
+# l2 is the final model
+summary(l2)
+rand(l2)      # site isn't significant
+performance::r2(l2)
+performance::check_model(l2)
+
+# C. non-leguminous forbs
+
+nl0 <- lmer(nl_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + log(avg_p_a) + season_seeded + 
+              (1|siteID), prairie_pi)
+summary(nl0)
+anova(nl0)
+
+# nix size 
+nl1 <- lmer(nl_pi_logit ~ year + species_seeded + age_yrs + 
+              log(avg_p_a) + season_seeded + 
+              (1|siteID), prairie_pi)
+anova(nl1, nl0)
+anova(nl1)     # out!
+
+# nix p_a_ratio
+nl2 <- lmer(nl_pi_logit ~ year + species_seeded + age_yrs + 
+               season_seeded + 
+              (1|siteID), prairie_pi)
+anova(nl1, nl2)      # out!
+anova(nl2)
+
+# nix age
+nl3 <- lmer(nl_pi_logit ~ year + species_seeded +  
+              season_seeded + 
+              (1|siteID), prairie_pi)
+anova(nl3, nl2)     # out!
+anova(nl3)
+
+# nix season 
+nl4 <- lmer(nl_pi_logit ~ year + species_seeded +  
+              (1|siteID), prairie_pi)
+anova(nl3, nl4)     # out!
+anova(nl4)
+
+# nothing sig, nl4 is the final model
+rand(nl4)
+performance::r2(nl4)
+performance::check_model(nl4)
+
+# ---- 4. All weedy spp ----
+w0 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + log(avg_p_a) + 
+             season_seeded + 
           (1|siteID), weedy_pi)
+anova(w0)
+
+# nix p_a ratio
+w1 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
+             log(area_in_strips) + 
+             season_seeded + 
+             (1|siteID), weedy_pi)
+anova(w1, w0)   # out!
 anova(w1)
 
 # nix age
@@ -127,22 +331,38 @@ performance::check_model(w4)
 performance::r2(w4)
 rand(w4)
 
-# 2B. Weedy perennials - both ok diagnostically, but logit fits better
+# ---- 5. Perennial weeds ----
+# both ok diagnostically, but logit fits better
 
-wp1 <- lmer(wp_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+wp0 <- lmer(wp_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + log(avg_p_a) +
+              season_seeded + 
               (1|siteID), weedy_pi)
-performance::check_model(wp1)
+performance::check_model(wp0)
 anova(wp1)
 
 # nix age
-wp2 <- lmer(wp_pi_logit ~ year + species_seeded + log(area_in_strips) + season_seeded + 
+wp1 <- lmer(wp_pi_logit ~ year + species_seeded + 
+              log(area_in_strips) + log(avg_p_a) +
+              season_seeded + 
               (1|siteID), weedy_pi)
-anova(wp1, wp2)           # out!
+anova(wp1, wp0)           # out!
+anova(wp1)
+
+# nix p_a ratio
+wp2 <- lmer(wp_pi_logit ~ year + species_seeded + 
+              log(area_in_strips) + 
+              season_seeded + 
+              (1|siteID), weedy_pi)
+anova(wp2, wp1)           # out!
+anova(wp2)
 
 # nix season
-wp3 <- lmer(wp_pi_logit ~ year + species_seeded + log(area_in_strips) + 
+wp3 <- lmer(wp_pi_logit ~ year + species_seeded + 
+              log(area_in_strips) + 
               (1|siteID), weedy_pi)
 anova(wp2, wp3)           # out!
+anova(wp3)
 
 # nix size
 wp4 <- lmer(wp_pi_logit ~ year + species_seeded + 
@@ -156,10 +376,20 @@ performance::check_model(wp4)
 performance::r2(wp4)
 rand(wp4)
 
-# 2C. Weedy annuals - logit transformation of relative cover
+# ---- 6. Annual weeds ----
 
-wa1 <- lmer(wa_pi_logit ~ year + species_seeded + age_yrs + log(area_in_strips) + season_seeded + 
+wa0 <- lmer(wa_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + log(avg_p_a) +
+              season_seeded + 
               (1|siteID), weedy_pi)
+anova(wa0)
+
+# nix p_a_ratio
+wa1 <- lmer(wa_pi_logit ~ year + species_seeded + age_yrs + 
+              log(area_in_strips) + 
+              season_seeded + 
+              (1|siteID), weedy_pi)
+anova(wa0, wa1)       # out! 
 anova(wa1)
 
 # nix size
@@ -183,12 +413,13 @@ summary(wa3)
 anova(wa3)
 performance::check_model(wa3)
 performance::r2(wa3)
-rand(wa3)                  # hmmm site doesn't matter...should I not include it? 
+rand(wa3)                  # site doesn't matter...
 
-# alternative...
-wa5 <- lm(wa_pi_logit ~ year + species_seeded + age_yrs, weedy_pi)
-summary(wa5)
-anova(wa5)
+
+
+# ---- Proportion of seedmix detected ----
+
+
 
 # ---- prairie vs weedy cover/richness ----
 data("site_div_rich")
@@ -355,3 +586,61 @@ rand(pp1)
 
 
 w_cov + aw_cov + pw_cov + plot_layout(guides = 'collect')
+
+# ---- investigating relationship between age and legume cover more ----
+
+# is the sig relationship between relative cover of legumes and age an artifact
+# of less legumes being seeded?
+
+# 1. relationship between age and the number of legumes spp seeded
+
+seed_rich <- read_csv("data-raw/seed_mix_info/all_site_seed_list.csv")
+
+leg_seed_rich <- 
+  seed_rich %>%
+  left_join(species_list, by = "speciesID") %>%
+  filter(family == "fabaceae") %>%
+  group_by(siteID) %>%
+  summarize(seeded_leg = n()) %>%
+  left_join(all_site_info, by = "siteID")
+
+leg_seed_rich %>%
+  ggplot(aes(age_yrs, seeded_leg))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+leg1 <- lm(log(seeded_leg) ~ age_yrs, leg_seed_rich)
+summary(leg1)
+performance::check_model(leg1)
+
+# this is probably more appropriate as a glm...
+legp1 <- glm(seeded_leg ~ age_yrs, family = poisson, data = leg_seed_rich)
+summary(legp1)
+performance::check_model(legp1)
+performance::check_overdispersion(legp1)
+
+# 2. relationship between age and relative amount of seed mix devoted to legumes
+# (only a subset of sites)
+
+seed_div <- read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
+
+leg_PLS_pi <- seed_div %>%
+  group_by(siteID) %>%
+  mutate(tot_PLS = sum (PLS_lbs_acre),
+         pi_PLS  = PLS_lbs_acre/tot_PLS) %>%
+  left_join(species_list, by = "speciesID") %>%
+  filter(family == "fabaceae") %>%
+  summarize(leg_PLS_pi = sum(pi_PLS)) %>%
+  left_join(all_site_info, by = "siteID")
+
+leg_PLS_pi %>%
+  ggplot(aes(age_yrs, car::logit(leg_PLS_pi)))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+leg2 <- lm(car::logit(leg_PLS_pi) ~ age_yrs, leg_PLS_pi)
+summary(leg2)
+performance::check_model(leg2)
+
+# yes, negative relationship between relative proportion of seed mix in legume seeds 
+# and the age of sites

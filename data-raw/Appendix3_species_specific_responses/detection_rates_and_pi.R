@@ -4,19 +4,23 @@
 library(tidyverse)
 library(STRIPS2veg)
 data("species_list")
+data("all_site_info")
 data("veg_site")
 data("extra_spp")
+data("strips")
+
+pa_rat <- strips %>%
+  mutate(perim_area = perimeter/area) %>%
+  group_by(siteID) %>%
+  summarize(n_strips = n(),
+            avg_p_a  = mean(perim_area))
+
+all_site_info <- left_join(all_site_info, pa_rat)
 
 nat_codes <- species_list %>% # 5 letter codes for prairie species
   filter(str_detect(group, "^prairie")) %>%
   dplyr::select(speciesID) %>%
   unlist()
-
-all_site_info <- all_site_info %>%
-  mutate(season_seeded = dplyr::recode(season_seeded, "winter" = "fall-winter",
-                                       "fall"   = "fall-winter")) %>%
-  # get rid of Watkins
-  filter(siteID != "WAT")
 
 # seed mix of each site 
 sm <- read_csv("data-raw/seed_mix_info/all_site_seed_list.csv") # seed mix for each site
@@ -60,48 +64,46 @@ p1 <- sm_found %>%
   scale_y_continuous(limits = c(0.4, 1))
 p1
 
-
 # ---- Modeling detection rate as a function of covariate - NS bc of anything ----
 
-l_full <- lm(car::logit(prop_found) ~ n_seeded + age_yrs + log(acres_in_strips) + season_seeded,
+l_full <- lm(car::logit(prop_found) ~ n_seeded + age_yrs + 
+               log(acres_in_strips) + log(avg_p_a) + 
+               season_seeded,
              data = sm_found)
 anova(l_full)
 
-# get rid of age
+# nix p_a ratio
 
-l1 <- lm(car::logit(prop_found) ~ n_seeded + log(acres_in_strips) + season_seeded,
+l1 <- lm(car::logit(prop_found) ~ n_seeded + age_yrs + 
+           log(acres_in_strips) + 
+           season_seeded,
          data = sm_found)
-ggResidpanel::resid_panel(l1)
-summary(l1)
+anova(l1, l_full)      # out! 
 anova(l1)
 
-anova(l1, l_full)      # out! 
+# get rid of age
+
+l2 <- lm(car::logit(prop_found) ~ n_seeded + log(acres_in_strips) + 
+           season_seeded,
+         data = sm_found)
+anova(l1, l2)          # out! 
+anova(l2)
 
 # get rid of season
-l2 <- lm(car::logit(prop_found) ~ n_seeded  + log(acres_in_strips),
+l3 <- lm(car::logit(prop_found) ~ n_seeded  + log(acres_in_strips),
          data = sm_found)
-summary(l2)
-anova(l2)
-anova(l2, l1)          # out!
+anova(l2, l3)          # out!
+anova(l3)
 
 # get rid of size
-l3 <- lm(car::logit(prop_found) ~ n_seeded,
+l4 <- lm(car::logit(prop_found) ~ n_seeded,
          data = sm_found)
-anova(l3)
+anova(l4, l3)
 
 # also try just size 
-l3 <- lm(car::logit(prop_found) ~ log(acres_in_strips),
-         data = sm_found)
-anova(l3)
-
-l4 <- lm(car::logit(prop_found) ~ season_seeded,
+l4 <- lm(car::logit(prop_found) ~ log(acres_in_strips),
          data = sm_found)
 anova(l4)
-summary(l4)
-
-sm_found %>%
-  ggplot(aes(season_seeded, car::logit(prop_found)))+
-  geom_boxplot()
 
 # ---- Modeling detection rate as a function of weedy cover & richness - meh ----
 
@@ -127,6 +129,17 @@ w1 <- lm(car::logit(prop_found) ~ mean_w_pi, data = weed_cov)
 summary(w1)
 ggResidpanel::resid_panel(w1)
 
+wp1 <- weed_cov %>%
+  ggplot(aes(mean_w_pi, car::logit(prop_found)))+
+  geom_smooth(method = "lm", lty = 2, size = 2, color = "black")+
+  geom_point(color = "grey20", size = 2)+
+  labs(x = "Relative cover of \nweedy species",
+       y = "logit(Detection rate)")+
+  theme_bw()+
+  theme(axis.title = element_text(size = 14),
+        axis.text  = element_text(size = 12))
+wp1
+
 #  Richness
 weed_rich <- veg_site %>%
   filter(speciesID %in% weeds) %>%
@@ -141,10 +154,21 @@ w2 <- lm(car::logit(prop_found) ~ w_rich, weed_rich)
 summary(w2)
 anova(w2)
 ggResidpanel::resid_panel(w2)
-weed_rich %>%
+
+wp2 <- weed_rich %>%
   ggplot(aes(w_rich, car::logit(prop_found)))+
-  geom_point()+
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm", lty = 2, size = 2, color = "black")+
+  geom_point(color = "grey20", size = 2)+
+  labs(x = "Weed species richness",
+       y = NULL)+
+  theme_bw()+
+  theme(axis.text.y = element_blank(),
+        axis.title  = element_text(size = 14),
+        axis.text.x = element_text(size = 12))
+wp2
+
+library(patchwork)
+wp1 + wp2 + plot_annotation(tag_levels = 'A', tag_suffix = ")")
 
 # ---- relative proportion species vs their seed mix ----
 
@@ -159,7 +183,7 @@ sites_pi <-
 
 
 sites_pi %>%
-  filter(siteID == "ROD") %>%
+  filter(siteID == "SMI") %>%
   ggplot(aes(seed_pi, pi))+
   geom_text(aes(label = speciesID))
 

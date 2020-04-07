@@ -47,6 +47,11 @@ anova(g2)
 g3 <- lm(gamma_div ~ season_seeded, sub_div_g)
 anova(g3)
 
+#       perim:area - NS
+g4 <- lm(gamma_div ~ avg_p_a, sub_div_g)
+anova(g4)
+
+
 # 2. beta diversity 
 sub_div_g %>%
   ggplot(aes(siteID, beta_div))+
@@ -63,6 +68,11 @@ anova(b2)
 #        season - NS
 b3 <- lm(beta_div ~ season_seeded, sub_div_g)
 anova(b3)
+
+#       perim:area - NS
+b4 <- lm(beta_div ~ avg_p_a, sub_div_g)
+anova(b4)
+
 
 # 3. alpha diversity 
 sub_div_q %>%
@@ -81,6 +91,11 @@ anova(a2)
 #        season - NS
 a3 <- lmer(alpha_div ~ season_seeded + (1|siteID), sub_div_q)
 anova(a3)
+
+#       perim:area - NS
+a4 <- lmer(alpha_div ~ avg_p_a + (1|siteID), sub_div_q)
+anova(a4)
+
 
 # ---- Richness of prairie and weedy spp, prairie species richness lowest in summer ----
 
@@ -106,6 +121,11 @@ pairs(p3m)                         # sig difference between fall and summer
 contrast(p3m)
 ggResidpanel::resid_panel(p3)
 
+#       perim:area - NS
+p4 <- lm(log(p_rich) ~ avg_p_a, sub_div_g)
+anova(p4)
+
+
 # 2. Gamma weedy richness
 sub_div_g %>%
   ggplot(aes(siteID, log(w_rich)))+
@@ -124,6 +144,9 @@ w3 <- lm(log(w_rich) ~ season_seeded, sub_div_g)
 summary(w3)
 anova(w3)
 
+#       perim:area - NS
+w4 <- lm(log(w_rich) ~ avg_p_a, sub_div_g)
+anova(w4)
  
 # ---- Cover of different functional groups ----
 
@@ -148,6 +171,11 @@ pp3_m <- emmeans(pp3, ~season_seeded)
 pairs(pp3_m)
 ggResidpanel::resid_panel(pp3)
 
+#       perim:area - NS
+pp4 <- lm(prairie_pi_logit ~ avg_p_a, sub_cov_p)
+anova(pp4)
+
+
 # 2. Prairie grass - NS difference
 sub_cov_p %>%
   ggplot(aes(siteID, pg_pi))+
@@ -165,6 +193,10 @@ summary(pg2)
 pg3 <- lm(pg_pi_logit ~ season_seeded, sub_cov_p)
 summary(pg3)
 anova(pg3)
+
+#       perim:area - NS
+pg4 <- lm(pg_pi_logit ~ avg_p_a, sub_cov_p)
+anova(pg4)
 
 # 3. Prairie forb - season matters for all three
 sub_cov_p %>%
@@ -188,6 +220,10 @@ pairs(pf3_m)
 contrast(pf3_m)
 ggResidpanel::resid_panel(pf3)
 
+#       perim:area - NS
+pf4 <- lm(pf_pi_logit ~ avg_p_a, sub_cov_p)
+anova(pf4)
+
 # 4. All weeds
 sub_cov_w %>%
   ggplot(aes(siteID, weed_pi))+
@@ -208,6 +244,9 @@ anova(ww3)
 ww3_m <- emmeans(ww3, ~season_seeded)
 pairs(ww3_m)        # fall and spring the same, summer different from both
 
+#       perim:area - NS
+ww4 <- lm(weed_pi_logit ~ avg_p_a, sub_cov_w)
+anova(ww4)
 
 # 5. Annual weeds - NS for all 
 sub_cov_w %>%
@@ -226,6 +265,10 @@ summary(wa2)
 wa3 <- lm(wa_pi_logit ~ season_seeded, sub_cov_w)
 summary(wa3)
 
+#       perim:area - NS
+wa4 <- lm(wa_pi_logit ~ avg_p_a, sub_cov_w)
+anova(wa4)
+
 # 6. Perennial weeds
 sub_cov_w %>%
   ggplot(aes(siteID, wp_pi))+
@@ -243,6 +286,10 @@ summary(wp2)
 wp3 <- lm(wp_pi_logit ~ season_seeded, sub_cov_w)
 summary(wp3)
 anova(wp3)
+
+#       perim:area - NS
+wp4 <- lm(wp_pi_logit ~ avg_p_a, sub_cov_w)
+anova(wp4)
 
 # ---- Manuscript figs ----
 
