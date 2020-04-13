@@ -83,7 +83,7 @@ q2 <-
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
   theme(axis.text.x = element_text(size = rel(1.5)),
         axis.text.y = element_text(size = rel(1.25))) 
-
+q2
 q1 + q2
 
 # Question 3 - interest in prairie species identication
