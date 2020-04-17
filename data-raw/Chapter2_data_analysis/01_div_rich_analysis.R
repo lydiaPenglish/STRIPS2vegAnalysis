@@ -6,7 +6,7 @@ library(performance)
 data("all_site_info")
 data("site_div_rich")
 
-# 1. checking VIF of variables 
+# 1.  ------ checking VIF of variables -----------------
 
 dummy_var <- sample(1:100, 26)
 
@@ -18,7 +18,7 @@ summary(c1)
 car::Anova(c1, type = "II")
 car::vif(c1)
 
-# 2A. Gamma diversity models 
+# 2A. ------ Gamma diversity models --------------------
 data("site_div_rich")
 hist(site_div_rich$gamma_div)
 
@@ -60,7 +60,30 @@ performance::check_model(g3)
 performance::model_performance(g3)
 rand(g3)   # random effect matters
 
-# 2B. Beta diversity models
+# aside... is there the same relatsionship with number of strips?
+data("strips")
+nos <- c("BUE_02", "GOS_04", "GOS_05", "GOS_06", "GOS_07", "ISB_02",
+         "STT_01", "STT_02", "STT_03")
+site_div_rich <- left_join(site_div_rich, 
+                           strips %>%
+                              filter(!(stripID %in% nos)) %>%
+                              group_by(siteID) %>%
+                              summarize(numStrips = n()),
+                           by = "siteID")
+
+site_div_rich %>%
+  ggplot(aes(log(acres_in_strips), numStrips))+
+  geom_text(aes(label = siteID))
+
+t1 <- lm(log(acres_in_strips) ~ numStrips, site_div_rich)
+summary(t1)
+
+g3b <- lmer(gamma_div ~ year + species_seeded + numStrips + 
+             (1|siteID), data = site_div_rich)
+summary(g3b)
+
+
+# 2B. ------ Beta diversity models ------------------------
 hist(site_div_rich$beta_div)
 
 b_all <- lmer(beta_div ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
@@ -102,7 +125,7 @@ rand(b3) # random effect matters
 performance::check_model(b3)
 performance::r2(b3)
 
-# 2C. Alpha diveristy models
+# 2C. ------ Alpha diveristy models ----------------------
 data("quad_div_rich")
 hist(quad_div_rich$alpha_div)
 
@@ -135,7 +158,7 @@ performance::r2(a2)  # model explains less than gamma/beta diversity models
 performance::check_model(a2)
 
 
-# 3A. Richness of the prairie community
+# 3A. ------ Richness of the prairie community ---------------
 
 hist(site_div_rich$p_rich)
 
@@ -156,6 +179,8 @@ p_log <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + log(av
 summary(p_log)
 anova(p_log)        # similar p-values to untransformed
 resid_panel(p_log)  # better
+resid_compare(list(p_all, p_log))
+performance::compare_performance(p_all, p_log)
 
 p_poi <- glmer(p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
                  age_yrs + 
@@ -163,7 +188,7 @@ p_poi <- glmer(p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p
                  (1|siteID), site_div_rich, family = poisson)           # singular fit...
 
 summary(p_poi)
-resid_panel(p_poi)
+resid_panel(p_poi)   # looks ok?
 
 # dispersion parameter - manually
 deviance(p_poi)/df.residual(p_poi)
@@ -212,7 +237,7 @@ anova(p2)
 performance::check_model(p2)
 performance::r2(p2)
 
-# 3B. Richness of the weedy community
+# 3B. ------ Richness of the weedy community -------------
 hist(site_div_rich$w_rich)
 
 w_all <- lmer(w_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
@@ -267,7 +292,7 @@ performance::compare_performance(w_log, w1, w2, w3, w4)  # yup w4 is the best
 performance::r2(w4)                                  # woof fixed effects explain little variation
 performance::check_model(w4)
 
-# 4A. --- Alpha prairie richness ---
+# 4A. ------ Alpha prairie richness ----------
 quad_div_rich <- 
   quad_div_rich %>%
   mutate(p_rich     = replace(p_rich, p_rich == 0, 0.001),
@@ -325,7 +350,7 @@ ap2_poi <- glmer(p_rich ~ year + species_seeded + age_yrs +
 performance::check_overdispersion(ap2_poi)        # poisson is ok
 performance::compare_performance(ap2, ap2_log, ap2_poi)
 
-# 4B. --- Weedy spp richness ---
+# 4B. ------ Weedy spp richness -----------
 
 wp_all <- lmer(w_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + 
                  log(avg_p_a) +
@@ -365,3 +390,39 @@ summary(wp3)
 rand(wp3)        # both random effects matter
 performance::check_model(wp3)
 performance::r2(wp3)     # ha, fixed effects explain very little...
+
+# 5.  ---- Mantel test looking at association between seed mix and all spp found ---- 
+
+# Null H: No association between distance matrices
+# Distance matrices = 
+#     i) All seed mixes
+#     ii) All species found
+
+all_sm <- read_csv("data-raw/seed_mix_info/all_site_seed_list.csv")%>%
+  mutate(presence = 1) %>%
+  pivot_wider(names_from = "speciesID", values_from = "presence") %>%
+  replace(is.na(.), 0) %>%
+  column_to_rownames(var = "siteID")
+
+data("veg_site")
+all_veg <- 
+  veg_site %>%
+  ungroup() %>%
+  select(siteID, speciesID) %>%
+  filter(siteID != "WAT", siteID != "GOS", siteID != "STT", siteID != "SME") %>%
+  distinct() %>%
+  mutate(presence = 1) %>%
+  arrange(speciesID)%>%
+  pivot_wider(names_from = speciesID, values_from = presence) %>%
+  replace(is.na(.), 0) %>%
+  arrange(siteID) %>%
+  column_to_rownames("siteID")
+
+sm_dist  <- vegan::vegdist(all_sm, method = "bray")
+veg_dist <- vegan::vegdist(all_veg, method = "bray")
+
+vegan::mantel(sm_dist, veg_dist, permutations = 9999)
+# statistic = 0.2596, p = 0.028
+
+
+

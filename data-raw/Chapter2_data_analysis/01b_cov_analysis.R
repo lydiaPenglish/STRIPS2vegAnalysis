@@ -417,10 +417,6 @@ rand(wa3)                  # site doesn't matter...
 
 
 
-# ---- Proportion of seedmix detected ----
-
-
-
 # ---- prairie vs weedy cover/richness ----
 data("site_div_rich")
 
@@ -586,6 +582,55 @@ rand(pp1)
 
 
 w_cov + aw_cov + pw_cov + plot_layout(guides = 'collect')
+
+# prairie cov vs. weed cov
+
+all_cov <- left_join(prairie_pi, weedy_pi)
+
+all_cov %>%
+  ggplot(aes(weed_cov, prairie_cov))+
+  geom_point(aes(color = year)) +
+  geom_smooth(aes(color = year), method = "lm", se = FALSE)
+
+wpcov <- lmer(prairie_cov ~ year+weed_cov + (1|siteID), all_cov)
+summary(wpcov)
+anova(wpcov)
+
+# on alpha level
+pc <- veg_mid %>%
+  select(year, quadratID, siteID, one_of(nat_codes)) %>%
+  mutate(nat_cov = rowSums(.[, 4:ncol(.)])) %>%
+  select(year, quadratID, siteID, nat_cov)
+wc <- veg_mid %>%
+  select(year, quadratID, siteID, one_of(weeds)) %>%
+  mutate(wd_cov = rowSums(.[, 4:ncol(.)])) %>%
+  select(year, quadratID, siteID, wd_cov)
+
+alpha_cov <- left_join(pc, wc)
+
+ac <- lmer(nat_cov ~ year + wd_cov + (1|quadratID:siteID) + (1|siteID), alpha_cov)
+summary(ac)
+anova(ac)
+
+alpha_cov %>%
+  ggplot(aes(wd_cov, nat_cov))+
+  geom_point(aes(color = year))+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE) +
+  facet_wrap(~siteID)
+
+# prairie richness vs weed richness
+
+pra_vs_wd %>%
+  ggplot(aes(w_rich, p_rich))+
+  geom_point(aes(color = year))+
+  geom_smooth(aes(color = year), method = "lm", se = FALSE)
+
+pw1 <- lmer(p_rich ~ year+w_rich + (1|siteID), pra_vs_wd)
+summary(pw1)
+anova(pw1)
+
+# no relationship between prairie and weedy richness (i.e. can have lots of prairie
+# and weedy plants coexisting)
 
 # ---- investigating relationship between age and legume cover more ----
 
