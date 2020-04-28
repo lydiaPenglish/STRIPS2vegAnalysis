@@ -152,7 +152,7 @@ anova(w4)
 
 # 1. All prairie, season matters
 sub_cov_p %>%
-  ggplot(aes(siteID, prairie_pi))+
+  ggplot(aes(siteID, prairie_pi_logit))+
   geom_col()
 
 #         size - NS
@@ -170,6 +170,7 @@ anova(pp3)
 pp3_m <- emmeans(pp3, ~season_seeded)
 pairs(pp3_m)
 ggResidpanel::resid_panel(pp3)
+
 
 #       perim:area - NS
 pp4 <- lm(prairie_pi_logit ~ avg_p_a, sub_cov_p)
@@ -317,6 +318,7 @@ plot_pr <-
   guides(color = FALSE)+
   labs(x = NULL, 
        y = "Prairie Species Richness")
+plot_pr
 
 gg_pr_pi <-
   sub_cov_p %>%
@@ -387,3 +389,77 @@ plot_pra <-
 
 library(patchwork)
 plot_pra + plot_pf + plot_pg
+
+# plots on regular scale (not logit transformed)
+
+gg_pr_pi2 <-
+  sub_cov_p %>%
+  select(pf_pi, pg_pi, prairie_pi, season_seeded) %>%
+  group_by(season_seeded) %>%
+  summarize(avg_pf_pi = mean(pf_pi),
+            sd_pf_pi  = sd(pf_pi),
+            se_pf_pi  = sd_pf_pi/sqrt(2),
+            avg_pg_pi = mean(pg_pi),
+            sd_pg_pi  = sd(pg_pi),
+            se_pg_pi  = sd_pg_pi/sqrt(2),
+            avg_pra_pi = mean(prairie_pi),
+            sd_pra_pi  = sd(prairie_pi),
+            se_pra_pi  = sd_pra_pi/sqrt(2)) %>%
+  mutate(sig_level_pf  = c("a", "b", "c"),
+         sig_level_pra = c("a", "a", "b"),
+         season_seeded = recode(season_seeded, "fall-winter" = "fall"),
+         season_seeded = stringr::str_to_title(season_seeded))
+
+plot_pf <- 
+  ggplot(gg_pr_pi2, aes(season_seeded, avg_pf_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi,
+                    ymax = avg_pf_pi + se_pf_pi),
+                width = 0.06, size = 1)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1))+
+  ggtitle("B. Forbs")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = NULL) +
+  theme(axis.text.x = element_text(size = 14),
+        axis.text.y = element_blank(),
+        plot.title  = element_text(size = 18))
+plot_pf
+plot_pg <- 
+  ggplot(gg_pr_pi2, aes(season_seeded, avg_pg_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pg_pi - se_pg_pi,
+                    ymax = avg_pg_pi + se_pg_pi),
+                width = 0.06, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1))+
+  ggtitle("C. Grasses")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = NULL) +
+  theme(axis.text.x = element_text(size = 14),
+        axis.text.y = element_blank(),
+        plot.title  = element_text(size = 18))
+plot_pg
+plot_pra <- 
+  ggplot(gg_pr_pi2, aes(season_seeded, avg_pra_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pra_pi - se_pra_pi,
+                    ymax = avg_pra_pi + se_pra_pi),
+                width = 0.06, size = 1)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pra), size = 5)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1))+
+  ggtitle("A. All Prairie Species")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = "Relative Cover") +
+  theme(axis.title.y = element_text(size = 18),
+        axis.text    = element_text(size = 14),
+        plot.title  = element_text(size = 18))
+plot_pra
+library(patchwork)
+plot_pra + plot_pf + plot_pg
+

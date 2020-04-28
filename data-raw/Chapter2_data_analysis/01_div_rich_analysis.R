@@ -54,13 +54,72 @@ anova(g3, g4)  # keep!
 # final model = g3
 resid_panel(g3)
 summary(g3)
-anova(g3)
+confint.merMod(g3) 
+# slopes = 0.371 (species seeded) and 2.58 (log(acres_in_strips))
+2.58710*log(2) # change in diveristy when area in doubled
+0.9436*log(2)
+4.23006*log(2)
+
+2.58710*log(1.471869) # change in diveristy when area is increased by 50%
+0.9436*log(1.5)
+4.23006*log(1.5)
+
+exp(1/2.58710)
+
+# checking model...
 performance::r2(g3)
 performance::check_model(g3)
 performance::model_performance(g3)
 rand(g3)   # random effect matters
 
-# aside... is there the same relatsionship with number of strips?
+
+
+# plotting predictions
+x2s = c(0,1,2)
+
+m18 <- lm(gamma_div ~ species_seeded + log(acres_in_strips),
+         data = filter(site_div_rich, year == "2018"))
+summary(m18)
+cfs_18 <- coef(m18)
+cfs_18[1]+cfs_18[3]*x2s[2]    # intercepts
+slopes <- data.frame(int = c(5.699972, 8.339305, 10.97864),
+                     sl  = c(0.2785, 0.2785, 0.2785),
+                     id  = c("log(area) = 0", "log(area) = 1", "log(area) = 2"))
+
+p1 <- site_div_rich %>%
+  filter(year == "2018") %>%
+  ggplot(aes(species_seeded, gamma_div))+
+  scale_y_continuous(limits = c(0, 35))+
+  scale_x_continuous(limits = c(15, 55))+
+  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id), 
+              size = 1)+
+  labs(x = "species_seeded",
+       y = "Predicted gamma diversity")
+p1
+
+m19 <- lm(gamma_div ~ species_seeded + log(acres_in_strips),
+      data = filter(site_div_rich, year == "2019"))
+summary(m19)
+cfs_19 <- coef(m19)
+cfs_19[1]+cfs_19[3]*x2s[3] 
+slope2 <- data.frame(int = c( 3.0253767,  5.604849 , 8.184321),
+                     sl  = c(0.4097232, 0.4097232, 0.4097232),
+                     id  = c("log(area) = 0", "log(area) = 1", "log(area) = 2"))
+
+p2 <- site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, gamma_div))+
+  scale_y_continuous(limits = c(0, 35))+
+  scale_x_continuous(limits = c(15, 55))+
+  geom_abline(data = slope2, aes(intercept = int, slope = sl, color = id), 
+              size = 1)+
+  labs(x = "species_seeded",
+       y = "Predicted gamma diversity")
+p2
+library(patchwork)  
+p1 + p2
+
+# aside... is there the same relationship with number of strips?
 data("strips")
 nos <- c("BUE_02", "GOS_04", "GOS_05", "GOS_06", "GOS_07", "ISB_02",
          "STT_01", "STT_02", "STT_03")
@@ -120,6 +179,8 @@ performance::compare_performance(b_all, b1, b2, b3)
 # final model is b3
 resid_panel(b3)
 summary(b3)
+confint.merMod(b3)
+
 anova(b3)
 rand(b3) # random effect matters
 performance::check_model(b3)
@@ -153,6 +214,9 @@ anova(a2)
 # keep everything else, model is a2
 resid_panel(a2)
 summary(a2)
+confint.merMod(a2) 
+confint.merMod(a2) * log(2)
+0.710130 * log(2)    # slope estimate for area, getting doubling effect
 rand(a2)             # both random effects matter
 performance::r2(a2)  # model explains less than gamma/beta diversity models
 performance::check_model(a2)
@@ -233,9 +297,19 @@ anova(p2)
 
 # p2 is the final model 
 summary(p2)
+confint.merMod(p2)
+exp(0.016765)                 # slope for species_seeded
+(exp(0.016765)-1)*100         # percent increase
+confint.merMod(p2) %>% exp()  # CI for percent increase
+
+2^0.080320                    # slope for size (multiplicative for doubling size)
+2^0.011177323
+2^0.14949540
+
 anova(p2)
 performance::check_model(p2)
 performance::r2(p2)
+rand(p2)
 
 # 3B. ------ Richness of the weedy community -------------
 hist(site_div_rich$w_rich)
@@ -288,10 +362,11 @@ anova(w3, w4)       # out!
 # w4 is the final model
 anova(w4)
 summary(w4)
+confint.merMod(w4)
 performance::compare_performance(w_log, w1, w2, w3, w4)  # yup w4 is the best
 performance::r2(w4)                                  # woof fixed effects explain little variation
 performance::check_model(w4)
-
+rand(w4)
 # 4A. ------ Alpha prairie richness ----------
 quad_div_rich <- 
   quad_div_rich %>%
@@ -335,6 +410,7 @@ anova(ap2)
 performance::check_convergence(ap2)           # this says it did converge so...
 performance::r2(ap2)
 summary(ap2)
+confint.merMod(ap2)
 anova(ap2)
 rand(ap2)   # both random effects matter
 performance::check_model(ap2)                 # idk some of these plots look weird but I'm going with it
@@ -350,7 +426,7 @@ ap2_poi <- glmer(p_rich ~ year + species_seeded + age_yrs +
 performance::check_overdispersion(ap2_poi)        # poisson is ok
 performance::compare_performance(ap2, ap2_log, ap2_poi)
 
-# 4B. ------ Weedy spp richness -----------
+# 4B. ------ Alpha weedy richness -----------
 
 wp_all <- lmer(w_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + 
                  log(avg_p_a) +
@@ -387,11 +463,13 @@ anova(wp3, wp2)  # out
 # wp3 is the final model
 anova(wp3)
 summary(wp3)
+confint.merMod(wp3)
 rand(wp3)        # both random effects matter
+
 performance::check_model(wp3)
 performance::r2(wp3)     # ha, fixed effects explain very little...
 
-# 5.  ---- Mantel test looking at association between seed mix and all spp found ---- 
+# 5.  ------ Mantel test looking at association between seed mix and all spp found ---- 
 
 # Null H: No association between distance matrices
 # Distance matrices = 
@@ -426,3 +504,52 @@ vegan::mantel(sm_dist, veg_dist, permutations = 9999)
 
 
 
+
+# 6.  ------ Make figures for strips summary slides
+
+# linear model between gamma diversity and seed mix, for 2019 only
+
+l1 <- lm(gamma_div ~ species_seeded, data = filter(site_div_rich, year == "2019"))
+summary(l1)
+anova(l1)
+
+l2 <- lm(p_rich ~ species_seeded, data = filter(site_div_rich, year == "2019"))
+summary(l2)
+anova(l2)
+
+g1 <- 
+  site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, gamma_div))+
+  geom_smooth(method = "lm", color = "#C669D5", fill = "#C669D5", size = 1.5)+
+  geom_point(shape = 21, size = 3, color = "black", stroke = 1.5)+
+  scale_y_continuous(limits = c(8, 40))+
+  labs(x = "Seed mix richness",
+       y = "Diversity (e^H')")+
+  theme_bw()+
+  theme(axis.title = element_text(size = 14),
+        axis.text  = element_text(size = 12))+
+  annotate("text", x = 25, y = 38, label = "bold(R^2 == 0.47)", parse = TRUE,
+           size = 5)+
+  annotate("text", x = 25, y = 34, label = "bold(p < 0.001)", parse = TRUE,
+           size = 5)
+g1
+g2 <- 
+  site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, p_rich))+
+  geom_smooth(method = "lm", color = "#C669D5", fill = "#C669D5", size = 1.5)+
+  geom_point(shape = 21, size = 3, color = "black", stroke = 1.5)+
+  scale_y_continuous(limits = c(8, 40))+
+  labs(x = "Seed mix richness",
+       y = "Prairie species richness")+
+  theme_bw()+
+  theme(axis.title = element_text(size = 14),
+        axis.text  = element_text(size = 12))+
+  annotate("text", x = 25, y = 38, label = "bold(R^2 == 0.44)", parse = TRUE,
+           size = 5)+
+  annotate("text", x = 25, y = 34, label = "bold(p < 0.001)", parse = TRUE,
+           size = 5)
+g2
+library(patchwork)
+g1 + g2

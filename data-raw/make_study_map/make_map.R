@@ -53,3 +53,22 @@ iowa %>%
         legend.text      = element_text(size = rel(1.1)),
         legend.title     = element_text(size = rel(1.3)))
 
+# map for strips slides
+
+iowa %>%
+  ggplot(aes(x = long, y = lat, group = group))+
+  geom_polygon(color = "black", fill = "white")+
+  geom_point(data = centroids_lat_lon, aes(x = x, y = y, fill = samesm),
+             pch = 21, size = 4) +
+  coord_map()+
+  labs(x ="", y = "", fill = "Year Sampled")+
+  guides(fill = FALSE)+
+  scale_fill_manual(values = c("#5F1343", "#C669D5"))+
+  theme(panel.background = element_blank(),
+        axis.text        = element_blank(),
+        axis.ticks       = element_blank(),
+        legend.direction = "horizontal",
+        legend.position  = "bottom",
+        legend.background = element_rect(color = "black"),
+        legend.text      = element_text(size = rel(1.1)),
+        legend.title     = element_text(size = rel(1.3)))

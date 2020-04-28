@@ -10,6 +10,13 @@ theme_set(theme_bw())
 
 source("data-raw/00b_format_veg_cov_data.R")
 
+# backtranform logit estimates to probabilites
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+
 # Modeling avg cover of ...
 # 1. All prairie spp
 # 2. Prairie grasses (and then C3 vs C4 grass)
@@ -53,8 +60,13 @@ summary(p4)
 anova(p4)
 rand(p4)     # effect matters
 performance::r2(p4)
-performance::check_model(p4)
-performance::compare_performance(p1, p2, p3, p4)
+performance::check_model(p4b)
+ggResidpanel::resid_panel(p4)
+performance::compare_performance(p4, p4b)
+
+p4_log <- lmer(log(prairie_pi) ~ year + species_seeded +
+                  (1|siteID), prairie_pi)
+summary(p4_log)
 
 # ---- 2. Prairie grass ----
 
@@ -133,6 +145,8 @@ anova(c44)
 
 # c44 is final model
 rand(c44)
+summary(c44)
+anova(c44)
 performance::r2(c44)
 performance::check_model(c44)
 
@@ -167,6 +181,7 @@ anova(c33)
 c34 <- lmer(c3_pi_logit ~ year + species_seeded + 
               (1|siteID), prairie_pi)
 anova(c33, c34)
+
 anova(c34)
 summary(c34)
 
@@ -217,7 +232,7 @@ performance::check_model(f4)
 
 # B. legumes - significantly go down with age...
 
-ggplot(prairie_pi, aes(age_yrs, car::logit(leg_pi)))+
+ggplot(prairie_pi, aes(age_yrs, log(leg_pi)))+
   geom_point(aes(color = year), size = 2)+
   geom_text(aes(color = year, label = siteID))+
   geom_smooth(aes(color = year), method = "lm", se = FALSE)
@@ -251,8 +266,14 @@ anova(l2, l3)    # keep!
 # l2 is the final model
 summary(l2)
 rand(l2)      # site isn't significant
+confint.merMod(l2)
 performance::r2(l2)
 performance::check_model(l2)
+
+l2_log <- lmer(log(leg_pi) ~ year + species_seeded + age_yrs + 
+                 log(area_in_strips) + 
+                 (1|siteID), prairie_pi)
+summary(l2_log)
 
 # C. non-leguminous forbs
 
@@ -290,9 +311,15 @@ anova(nl3, nl4)     # out!
 anova(nl4)
 
 # nothing sig, nl4 is the final model
+summary(nl4)
+anova(nl4)
 rand(nl4)
 performance::r2(nl4)
 performance::check_model(nl4)
+
+nl4_log <- lmer(log(nl_pi) ~ year + species_seeded +  
+                  (1|siteID), prairie_pi)
+summary(nl4_log)
 
 # ---- 4. All weedy spp ----
 w0 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
@@ -376,6 +403,10 @@ performance::check_model(wp4)
 performance::r2(wp4)
 rand(wp4)
 
+wp_log <- lmer(log(wp_pi) ~ year + species_seeded + 
+                 (1|siteID), weedy_pi)
+summary(wp_log)
+
 # ---- 6. Annual weeds ----
 
 wa0 <- lmer(wa_pi_logit ~ year + species_seeded + age_yrs + 
@@ -410,12 +441,25 @@ anova(wa4, wa3)            # keep!
 
 # final model is wa3
 summary(wa3)
+confint.merMod(wa3)
+
+# age slope = -0.36402
+exp(-0.36402)
+
 anova(wa3)
 performance::check_model(wa3)
 performance::r2(wa3)
 rand(wa3)                  # site doesn't matter...
 
+# do log instead...?
+wa3b <- lmer(log(wa_pi) ~ year + species_seeded + age_yrs + 
+               (1|siteID), weedy_pi)
+summary(wa3b)
+ggResidpanel::resid_compare(list(wa3, wa3b))
 
+exp(-0.35838)                 # slope for age
+(exp(-0.35838)-1)*100         # percent increase
+confint.merMod(wa3b) %>% exp() 
 
 # ---- prairie vs weedy cover/richness ----
 data("site_div_rich")
@@ -423,10 +467,16 @@ data("site_div_rich")
 # prairie cover vs weedy richness
 pra_vs_wd <- left_join(site_div_rich, prairie_pi)
 
+df <- data.frame(year = c("2018", "2019"),
+                 ints = c(3.69586, 3.82647),
+                 slps = c(-1.28937, -1.28937))
+
 pra_cov <- 
   ggplot(pra_vs_wd, aes(prairie_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_abline(data = df, aes( 
+              intercept = ints, slope = slps,
+              color = year), lty = 2, size = 1)+
   geom_text(aes(0.75, 3.7), label = "R[m]^2 == 0.48", parse = TRUE)+
   geom_text(aes(0.75, 3.6), label = "p[year] == 0.04", parse = TRUE)+
   geom_text(aes(0.75, 3.5), label = "p[cov] < 0.001", parse = TRUE)+
@@ -442,6 +492,8 @@ pra_cov <-
 pra_cov
 
 pw1 <- lmer(log(w_rich) ~ year + prairie_pi + (1|siteID), pra_vs_wd)
+pw2 <- lmer(log(w_rich) ~ year*prairie_pi + (1|siteID), pra_vs_wd)
+anova(pw1, pw2) # no interaction
 summary(pw1)
 anova(pw1)
 performance::check_model(pw1)
@@ -449,10 +501,16 @@ performance::r2(pw1)
 
 # weedy richness vs prairie grass cov - SIG
 
+df2 <- data.frame(year = c("2018", "2019"),
+                  ints = c(3.16503, 3.31848),
+                  slps = c(-0.96636, -0.96636))
+
 pg_cov <- 
   ggplot(pra_vs_wd, aes(pg_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_abline(data = df2, aes( 
+    intercept = ints, slope = slps,
+    color = year), lty = 2, size = 1)+
   geom_text(aes(0.6, 3.7), label = "R[m]^2 == 0.31", parse = TRUE)+
   geom_text(aes(0.6, 3.6), label = "p[year] == 0.02", parse = TRUE)+
   geom_text(aes(0.6, 3.5), label = "p[cov] == 0.002", parse = TRUE)+
@@ -466,8 +524,11 @@ pg_cov <-
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_blank(),
         axis.title  = element_text(size = 14))
+pg_cov
 
-gw1 <- lmer(log(w_rich) ~ year + pg_pi + (1|siteID), pra_vs_wd)
+gw1 <- lmer(log(w_rich) ~ year+pg_pi + (1|siteID), pra_vs_wd)
+gw2 <- lmer(log(w_rich) ~ year*pg_pi + (1|siteID), pra_vs_wd)
+anova(gw1, gw2)  # no interaction
 summary(gw1)
 anova(gw1)
 performance::r2(gw1)
@@ -475,10 +536,17 @@ performance::check_model(gw1)
 
 # weedy richness vs prairie forb cov
 
+df3 <- data.frame(year = c("2018", "2019"),
+                  ints = c(2.81717, 3.34081),
+                  slps = c(0.06113, -1.00018))
+
 pf_cov <- 
   ggplot(pra_vs_wd, aes(pf_pi, log(w_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
+  geom_abline(data = df3, aes( 
+          intercept = ints, slope = slps,
+          color = year), lty = 2, size = 1)+
+ # geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
   geom_text(aes(0.45, 3.8), label = "R[m]^2 == 0.14", parse = TRUE)+
   geom_text(aes(0.45, 3.7), label = "p[year] == 0.002", parse = TRUE)+
   geom_text(aes(0.45, 3.6), label = "p[cov] == 0.29", parse = TRUE)+
@@ -505,13 +573,20 @@ performance::r2(fw1)
 # weed pi vs. richness of prairie species
 wd_vs_pra <- left_join(site_div_rich, weedy_pi)
 
+df4 <- data.frame(year = c("2018", "2019"),
+                  ints = c(3.227344, 3.23229),
+                  slps = c(-0.495855, -0.495855))
 w_cov <- 
   ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
+  geom_abline(data = df4, aes( 
+    intercept = ints, slope = slps,
+    color = year), lty = 2, size = 1)+
+  #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.7, 3.7), label = "R[m]^2 == 0.13", parse = TRUE)+
   geom_text(aes(0.7, 3.6), label = "p[year] == 0.92", parse = TRUE)+
   geom_text(aes(0.7, 3.5), label = "p[cov] == 0.04", parse = TRUE)+
+  scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   ggtitle("A. All Weeds")+
   labs(x = "Relative Cover",
@@ -529,10 +604,17 @@ performance::r2(wp1)
 
 # annual weed pi vs prairie richness - NS
 
+df5 <- data.frame(year = c("2018", "2019"),
+                  ints = c(3.10695, 3.10695-0.01489),
+                  slps = c(-0.35135, -0.35135))
+
 aw_cov <- 
   ggplot(wd_vs_pra, aes(wa_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
+  geom_abline(data = df5, aes( 
+    intercept = ints, slope = slps,
+    color = year), lty = 2, size = 1)+
+  #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.4, 3.7), label = "R[m]^2 == 0.02", parse = TRUE)+
   geom_text(aes(0.4, 3.6), label = "p[year] == 0.76", parse = TRUE)+
   geom_text(aes(0.4, 3.5), label = "p[cov] == 0.36", parse = TRUE)+
@@ -546,6 +628,7 @@ aw_cov <-
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_blank(),
         axis.title  = element_text(size = 14))
+aw_cov
 
 ap1 <- lmer(log(p_rich) ~ year + wa_pi + (1|siteID), wd_vs_pra)
 summary(ap1)
@@ -554,11 +637,17 @@ performance::check_model(ap1)
 performance::r2(ap1)
 
 # perennial weedy pi vs. prairie richness - nearly SIG
+df6 <- data.frame(year = c("2018", "2019"),
+                  ints = c(3.197928, 3.197928+0.008941),
+                  slps = c(-0.593589, -0.593589))
 
 pw_cov <- 
   ggplot(wd_vs_pra, aes(wp_pi, log(p_rich)))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
-  geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
+  geom_abline(data = df6, aes( 
+    intercept = ints, slope = slps,
+    color = year), lty = 2, size = 1)+
+  #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
   geom_text(aes(0.45, 3.7), label = "R[m]^2 == 0.11", parse = TRUE)+
   geom_text(aes(0.45, 3.6), label = "p[year] == 0.86", parse = TRUE)+
   geom_text(aes(0.45, 3.5), label = "p[cov] == 0.05", parse = TRUE)+
@@ -572,6 +661,7 @@ pw_cov <-
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_blank(),
         axis.title  = element_text(size = 14))
+pw_cov
 
 pp1 <- lmer(log(p_rich) ~ year + wp_pi + (1|siteID), wd_vs_pra)
 summary(pp1)
