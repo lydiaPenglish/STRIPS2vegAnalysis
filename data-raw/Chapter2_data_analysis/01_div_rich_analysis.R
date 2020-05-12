@@ -11,7 +11,7 @@ data("site_div_rich")
 dummy_var <- sample(1:100, 26)
 
 # Model with only continuouse variables
-c1 <- lm(dummy_var ~ species_seeded + age_yrs + log(acres_in_strips) + avg_p_a +
+c1 <- lm(dummy_var ~ species_seeded + age_yrs + log(hectares_in_strips) + avg_p_a +
            season_seeded,
          na.action = "na.omit", data = filter(site_div_rich, year == "2019"))
 summary(c1)
@@ -22,27 +22,27 @@ car::vif(c1)
 data("site_div_rich")
 hist(site_div_rich$gamma_div)
 
-g_all <- lmer(gamma_div ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+g_all <- lmer(gamma_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + season_seeded + 
                 (1|siteID), data = site_div_rich)
 summary(g_all)         # more variation in site than in residual
 anova(g_all)
 
 # nix perim_area rat
-g1 <-  lmer(gamma_div ~ year + species_seeded + log(acres_in_strips) + age_yrs +
+g1 <-  lmer(gamma_div ~ year + species_seeded + log(hectares_in_strips) + age_yrs +
               season_seeded +
               (1|siteID), data = site_div_rich)
 anova(g_all, g1) # out!
 anova(g1)
 
 # nix season
-g2 <-  lmer(gamma_div ~ year + species_seeded + log(acres_in_strips) + age_yrs +
+g2 <-  lmer(gamma_div ~ year + species_seeded + log(hectares_in_strips) + age_yrs +
               (1|siteID), data = site_div_rich)
 anova(g1, g2) # out! (but close to mattering)
 anova(g2)
 
 # nix age
-g3 <- lmer(gamma_div ~ year + species_seeded + log(acres_in_strips) + 
+g3 <- lmer(gamma_div ~ year + species_seeded + log(hectares_in_strips) + 
                   (1|siteID), data = site_div_rich)
 anova(g2, g3)  # out!
 
@@ -55,7 +55,7 @@ anova(g3, g4)  # keep!
 resid_panel(g3)
 summary(g3)
 confint.merMod(g3) 
-# slopes = 0.371 (species seeded) and 2.58 (log(acres_in_strips))
+# slopes = 0.371 (species seeded) and 2.58 (log(hectares_in_strips))
 2.58710*log(2) # change in diveristy when area in doubled
 0.9436*log(2)
 4.23006*log(2)
@@ -75,16 +75,17 @@ rand(g3)   # random effect matters
 
 
 # plotting predictions
-x2s = c(0,1,2)
+x2s = c(-.7,0.4,1.61)
+# equivalent to 0.5 hectares, 1.5 hectares, and 5 hectares
 
-m18 <- lm(gamma_div ~ species_seeded + log(acres_in_strips),
+m18 <- lm(gamma_div ~ species_seeded + log(hectares_in_strips),
          data = filter(site_div_rich, year == "2018"))
 summary(m18)
 cfs_18 <- coef(m18)
-cfs_18[1]+cfs_18[3]*x2s[2]    # intercepts
-slopes <- data.frame(int = c(5.699972, 8.339305, 10.97864),
+cfs_18[1]+cfs_18[3]*x2s[3]    # intercepts
+slopes <- data.frame(int = c(6.240094, 9.14336 , 12.33695 ),
                      sl  = c(0.2785, 0.2785, 0.2785),
-                     id  = c("log(area) = 0", "log(area) = 1", "log(area) = 2"))
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
 
 p1 <- site_div_rich %>%
   filter(year == "2018") %>%
@@ -97,14 +98,14 @@ p1 <- site_div_rich %>%
        y = "Predicted gamma diversity")
 p1
 
-m19 <- lm(gamma_div ~ species_seeded + log(acres_in_strips),
+m19 <- lm(gamma_div ~ species_seeded + log(hectares_in_strips),
       data = filter(site_div_rich, year == "2019"))
 summary(m19)
 cfs_19 <- coef(m19)
-cfs_19[1]+cfs_19[3]*x2s[3] 
-slope2 <- data.frame(int = c( 3.0253767,  5.604849 , 8.184321),
+cfs_19[1]+cfs_19[3]*x2s[1] 
+slope2 <- data.frame(int = c(3.553248, 6.390667, 9.511829),
                      sl  = c(0.4097232, 0.4097232, 0.4097232),
-                     id  = c("log(area) = 0", "log(area) = 1", "log(area) = 2"))
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
 
 p2 <- site_div_rich %>%
   filter(year == "2019") %>%
@@ -131,10 +132,10 @@ site_div_rich <- left_join(site_div_rich,
                            by = "siteID")
 
 site_div_rich %>%
-  ggplot(aes(log(acres_in_strips), numStrips))+
+  ggplot(aes(log(hectares_in_strips), numStrips))+
   geom_text(aes(label = siteID))
 
-t1 <- lm(log(acres_in_strips) ~ numStrips, site_div_rich)
+t1 <- lm(log(hectares_in_strips) ~ numStrips, site_div_rich)
 summary(t1)
 
 g3b <- lmer(gamma_div ~ year + species_seeded + numStrips + 
@@ -145,7 +146,7 @@ summary(g3b)
 # 2B. ------ Beta diversity models ------------------------
 hist(site_div_rich$beta_div)
 
-b_all <- lmer(beta_div ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+b_all <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + season_seeded + 
                 (1|siteID), data = site_div_rich)
 summary(b_all)
@@ -153,21 +154,23 @@ anova(b_all)
 
 # nix p_a ratio
 
-b0 <- lmer(beta_div ~ year + species_seeded + log(acres_in_strips) + 
+b0 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
              age_yrs + season_seeded + 
              (1|siteID), data = site_div_rich)
 anova(b0, b_all)   # out!
 anova(b0)
 
 # nix age
-b1 <- lmer(beta_div ~ year + species_seeded + log(acres_in_strips) + 
+b1 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
              season_seeded + (1|siteID), data = site_div_rich)
 anova(b_all, b1) # out!
+anova(b1)
 
 # nix size
 b2 <- lmer(beta_div ~ year + species_seeded + 
              season_seeded + (1|siteID), data = site_div_rich)
 anova(b2, b1) # out!
+anova(b2)
 
 # nix season
 b3 <- lmer(beta_div ~ year + species_seeded + 
@@ -190,14 +193,14 @@ performance::r2(b3)
 data("quad_div_rich")
 hist(quad_div_rich$alpha_div)
 
-a_all <- lmer(alpha_div ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+a_all <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + season_seeded + 
                 (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
 summary(a_all)
 anova(a_all)
 
 # nix season seeded
-a1 <-  lmer(alpha_div ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) + 
+a1 <-  lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) + 
               age_yrs +
               (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
 anova(a_all, a1) # out
@@ -205,7 +208,7 @@ anova(a1)
 
 # nix p_a ratio
 
-a2 <- lmer(alpha_div ~ year + species_seeded + log(acres_in_strips) +  
+a2 <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) +  
              age_yrs +
              (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
 anova(a2, a1)
@@ -226,7 +229,7 @@ performance::check_model(a2)
 
 hist(site_div_rich$p_rich)
 
-p_all <- lmer(p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+p_all <- lmer(p_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + season_seeded +
                 (1|siteID), site_div_rich)
 anova(p_all)
@@ -237,7 +240,7 @@ site_div_rich <-
   mutate(log_p_rich = log(p_rich),
          log_w_rich = log(w_rich))
 
-p_log <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+p_log <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + season_seeded +
                 (1|siteID), site_div_rich)
 summary(p_log)
@@ -246,7 +249,7 @@ resid_panel(p_log)  # better
 resid_compare(list(p_all, p_log))
 performance::compare_performance(p_all, p_log)
 
-p_poi <- glmer(p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+p_poi <- glmer(p_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                  age_yrs + 
                  season_seeded +
                  (1|siteID), site_div_rich, family = poisson)           # singular fit...
@@ -263,7 +266,7 @@ sum(r^2)/df.residual(p_poi)
 # dispersion parameter - automatically                   # not overdispersed
 performance::check_overdispersion(p_poi)
 
-p_nb <- glmer.nb(p_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+p_nb <- glmer.nb(p_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                    age_yrs + 
                    season_seeded +
                    (1|siteID), site_div_rich)     # also singular fit...
@@ -276,21 +279,21 @@ anova(p_log)
 
 # nix p a ratio
 
-p0 <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + age_yrs + 
+p0 <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + age_yrs + 
              season_seeded +
              (1|siteID), site_div_rich)
 anova(p0, p_log)    # out!
 anova(p0)
 
 # nix age
-p1 <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + 
+p1 <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + 
              season_seeded +
              (1|siteID), site_div_rich)
 anova(p0, p1) # out!
 anova(p1)
 
 # nix season
-p2 <- lmer(log_p_rich ~ year + species_seeded + log(acres_in_strips) + 
+p2 <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + 
              (1|siteID), site_div_rich)
 anova(p1, p2) # out!
 anova(p2)
@@ -314,19 +317,19 @@ rand(p2)
 # 3B. ------ Richness of the weedy community -------------
 hist(site_div_rich$w_rich)
 
-w_all <- lmer(w_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+w_all <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + 
                 season_seeded +
                 (1|siteID), site_div_rich)
 summary(w_all)
 ggResidpanel::resid_panel(w_all)
 
-w_poi <- glmer(w_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+w_poi <- glmer(w_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                  age_yrs + 
                  season_seeded +
                  (1|siteID), site_div_rich, family = poisson)        # model doesn't converge....grr
 
-w_log <- lmer(log_w_rich ~ year + species_seeded + log(acres_in_strips) + log(avg_p_a) +
+w_log <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
                 age_yrs + 
                 season_seeded +
                 (1|siteID), site_div_rich)
@@ -334,7 +337,7 @@ ggResidpanel::resid_panel(w_log)
 anova(w_log)
 
 # nix age
-w1 <- lmer(log_w_rich ~ year + species_seeded + log(acres_in_strips) +
+w1 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
              log(avg_p_a) +
              season_seeded +
              (1|siteID), site_div_rich)
@@ -342,14 +345,14 @@ anova(w_log, w1)    # out!
 anova(w1)
 
 # nix season
-w2 <- lmer(log_w_rich ~ year + species_seeded + log(acres_in_strips) +
+w2 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
              log(avg_p_a) +
              (1|siteID), site_div_rich)
 anova(w2, w1)       # out!
 anova(w2)
 
 # nix p_a ratio
-w3 <- lmer(log_w_rich ~ year + species_seeded + log(acres_in_strips) +
+w3 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
              (1|siteID), site_div_rich)
 anova(w3, w2)    # out!
 anova(w3)
@@ -375,7 +378,7 @@ quad_div_rich <-
          log_p_rich = log(p_rich),
          log_w_rich = log(w_rich))
 
-ap_all <- lmer(p_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + log(avg_p_a) +
+ap_all <- lmer(p_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + log(avg_p_a) +
                  season_seeded +
                  (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 summary(ap_all)
@@ -384,7 +387,7 @@ resid_panel(ap_all)
 
 # nix p_a ratio
 
-ap0 <- lmer(p_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + 
+ap0 <- lmer(p_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
               season_seeded +
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(ap0, ap_all)     # out! 
@@ -428,7 +431,7 @@ performance::compare_performance(ap2, ap2_log, ap2_poi)
 
 # 4B. ------ Alpha weedy richness -----------
 
-wp_all <- lmer(w_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + 
+wp_all <- lmer(w_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
                  log(avg_p_a) +
                  season_seeded +
                  (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
@@ -436,21 +439,21 @@ resid_panel(wp_all)
 anova(wp_all) # welp nothing signicant but will still go through stepwise
 
 # nix p_a ratio
-wp0 <- lmer(w_rich ~ year + species_seeded + age_yrs + log(acres_in_strips) + 
+wp0 <- lmer(w_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
               season_seeded +
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(wp0, wp_all)    # out! 
 anova(wp0)
 
 # nix age 
-wp1 <- lmer(w_rich ~ year + species_seeded + log(acres_in_strips) +
+wp1 <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) +
               season_seeded + 
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(wp1, wp0)  # out
 anova(wp1)
 
 # nix season
-wp2 <- lmer(w_rich ~ year + species_seeded + log(acres_in_strips) +
+wp2 <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) +
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(wp2, wp1) # out!
 anova(wp2)

@@ -101,7 +101,7 @@ anova(a4)
 
 # 1. Gamma prairie richness
 sub_div_g %>%
-  ggplot(aes(siteID, log(p_rich)))+
+  ggplot(aes(siteID, p_rich))+
   geom_col()
 
 #        size - NS
@@ -113,13 +113,19 @@ p2 <- lm(log(p_rich) ~ age_yrs,  sub_div_g)
 summary(p2)
 
 #        season - sig!!!
-p3 <- lm(log(p_rich) ~ season_seeded, sub_div_g)
+p3 <- lm(p_rich ~ season_seeded, sub_div_g)
 summary(p3)
 anova(p3)
-p3m <- emmeans(p3, ~season_seeded)
-pairs(p3m)                         # sig difference between fall and summer
-contrast(p3m)
+p3m <- emmeans(p3, ~season_seeded,)
+summary(p3m)
+pairs(p3m) %>%
+  confint() # sig difference between fall and summer
+contrast(p3m) %>%
+  confint()
+
 ggResidpanel::resid_panel(p3)
+
+#manu plot
 
 #       perim:area - NS
 p4 <- lm(log(p_rich) ~ avg_p_a, sub_div_g)
@@ -128,7 +134,7 @@ anova(p4)
 
 # 2. Gamma weedy richness
 sub_div_g %>%
-  ggplot(aes(siteID, log(w_rich)))+
+  ggplot(aes(siteID, w_rich))+
   geom_col()
 
 #        size - NS
@@ -140,7 +146,7 @@ w2 <- lm(log(w_rich) ~ age_yrs, sub_div_g)
 summary(w2)
 
 #        season - NS
-w3 <- lm(log(w_rich) ~ season_seeded, sub_div_g)
+w3 <- lm(w_rich ~ season_seeded, sub_div_g)
 summary(w3)
 anova(w3)
 
@@ -305,7 +311,8 @@ gg_wp_rich <-
             sd_w_rich  = sd(w_rich),
             se_w_rich  = sd_w_rich/sqrt(2)) %>%
   mutate(sig_level = c("a", "ab", "b"),
-         season_seeded = recode(season_seeded, "fall-winter" = "fall"))
+         season_seeded = recode(season_seeded, "fall-winter" = "fall"),
+         season_seeded = stringr::str_to_title(season_seeded))
 
 
 plot_pr <- 
@@ -315,10 +322,34 @@ plot_pr <-
                     ymax = avg_p_rich + se_p_rich),
                     width = 0.05, size = 1.5)+
   geom_text(aes(season_seeded, y = 10 + avg_p_rich, label = sig_level), size = 5)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 40))+
   guides(color = FALSE)+
+  ggtitle("A. Prairie")+
   labs(x = NULL, 
-       y = "Prairie Species Richness")
+       y = "Species richness")+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
 plot_pr
+
+
+plot_wr <- 
+  ggplot(gg_wp_rich, aes(season_seeded, avg_w_rich))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_w_rich - se_w_rich, 
+                    ymax = avg_w_rich + se_w_rich),
+                width = 0.05, size = 1.5)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 40))+
+  guides(color = FALSE)+
+  ggtitle("B. Weedy")+
+  labs(x = NULL, 
+       y = NULL)+
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 12))
+plot_wr
+
+plot_pr + plot_wr
 
 gg_pr_pi <-
   sub_cov_p %>%
