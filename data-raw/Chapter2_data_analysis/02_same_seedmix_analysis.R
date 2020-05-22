@@ -7,6 +7,7 @@ library(tidyverse)
 library(lmerTest)
 library(emmeans)
 library(patchwork)
+library(extrafont)
 sites <- c("ARM", "WOR", "MRS", "NYK", "SER", "RHO")
 data("site_div_rich")
 data("quad_div_rich")
@@ -257,7 +258,7 @@ anova(ww4)
 
 # 5. Annual weeds - NS for all 
 sub_cov_w %>%
-  ggplot(aes(siteID, wa_pi_logit))+
+  ggplot(aes(siteID, wa_pi))+
   geom_col()
 
 #         size - NS
@@ -300,6 +301,7 @@ anova(wp4)
 
 # ---- Manuscript figs ----
 
+# species richness ---------------------------------------------
 gg_wp_rich <- 
   sub_div_g %>%
   select(p_rich, w_rich, season_seeded) %>%
@@ -321,15 +323,17 @@ plot_pr <-
   geom_errorbar(aes(ymin = avg_p_rich - se_p_rich, 
                     ymax = avg_p_rich + se_p_rich),
                     width = 0.05, size = 1.5)+
-  geom_text(aes(season_seeded, y = 10 + avg_p_rich, label = sig_level), size = 5)+
+  geom_text(aes(season_seeded, y = 10 + avg_p_rich, label = sig_level), size = 5,
+            family = "Fira Sans")+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 40))+
   guides(color = FALSE)+
   ggtitle("A. Prairie")+
   labs(x = NULL, 
        y = "Species richness")+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 plot_pr
 
 
@@ -345,12 +349,14 @@ plot_wr <-
   ggtitle("B. Weedy")+
   labs(x = NULL, 
        y = NULL)+
-  theme(axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 12))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 plot_wr
 
 plot_pr + plot_wr
 
+# prairie cover (logit) ------------------------------------------------
 gg_pr_pi <-
   sub_cov_p %>%
   select(pf_pi_logit, pg_pi_logit, prairie_pi_logit, season_seeded) %>%
@@ -421,7 +427,7 @@ plot_pra <-
 library(patchwork)
 plot_pra + plot_pf + plot_pg
 
-# plots on regular scale (not logit transformed)
+# prairie cover (not logit) -----------------------------------------------
 
 gg_pr_pi2 <-
   sub_cov_p %>%
@@ -447,16 +453,17 @@ plot_pf <-
   geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi,
                     ymax = avg_pf_pi + se_pf_pi),
                 width = 0.06, size = 1)+
-  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5,
+            family = "Fira Sans")+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 1.1))+
   ggtitle("B. Forbs")+
   guides(color = FALSE)+
   labs(x = NULL, 
        y = NULL) +
-  theme(axis.text.x = element_text(size = 14),
+  theme(axis.text.x = element_text(size = 14, family = "Fira Sans"),
         axis.text.y = element_blank(),
-        plot.title  = element_text(size = 18))
+        plot.title  = element_text(size = 18, family = "Fira Sans"))
 plot_pf
 plot_pg <- 
   ggplot(gg_pr_pi2, aes(season_seeded, avg_pg_pi))+
@@ -470,9 +477,9 @@ plot_pg <-
   guides(color = FALSE)+
   labs(x = NULL, 
        y = NULL) +
-  theme(axis.text.x = element_text(size = 14),
+  theme(axis.text.x = element_text(size = 14, family = "Fira Sans"),
         axis.text.y = element_blank(),
-        plot.title  = element_text(size = 18))
+        plot.title  = element_text(size = 18, family = "Fira Sans"))
 plot_pg
 plot_pra <- 
   ggplot(gg_pr_pi2, aes(season_seeded, avg_pra_pi))+
@@ -480,17 +487,85 @@ plot_pra <-
   geom_errorbar(aes(ymin = avg_pra_pi - se_pra_pi,
                     ymax = avg_pra_pi + se_pra_pi),
                 width = 0.06, size = 1)+
-  geom_text(aes(season_seeded, y = 1, label = sig_level_pra), size = 5)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pra), size = 5,
+            family = "Fira Sans")+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 1.1))+
   ggtitle("A. All Prairie Species")+
   guides(color = FALSE)+
   labs(x = NULL, 
        y = "Relative Cover") +
-  theme(axis.title.y = element_text(size = 18),
-        axis.text    = element_text(size = 14),
-        plot.title  = element_text(size = 18))
+  theme(axis.title.y = element_text(size = 18, family = "Fira Sans"),
+        axis.text    = element_text(size = 14, family = "Fira Sans"),
+        plot.title  = element_text(size = 18, family = "Fira Sans"))
 plot_pra
 library(patchwork)
 plot_pra + plot_pf + plot_pg
 
+# weedy cover ---------------------------------------------------------
+
+gg_wc <- sub_cov_w %>%
+  select(weed_pi, wp_pi, wa_pi, season_seeded) %>%
+  group_by(season_seeded) %>%
+  summarize(avg_weed_pi = mean(weed_pi),
+            sd_weed_pi  = sd(weed_pi),
+            se_weed_pi  = sd_weed_pi/sqrt(2),
+            avg_wp_pi = mean(wp_pi),
+            sd_wp_pi  = sd(wp_pi),
+            se_wp_pi  = sd_wp_pi/sqrt(2),
+            avg_wa_pi = mean(wa_pi),
+            sd_wa_pi  = sd(wa_pi),
+            se_wa_pi  = sd_wa_pi/sqrt(2)) %>%
+  mutate(sig_level_weed  = c("a", "a", "b"),
+         season_seeded = recode(season_seeded, "fall-winter" = "fall"),
+         season_seeded = stringr::str_to_title(season_seeded))
+
+plota <- ggplot(gg_wc, aes(season_seeded, avg_weed_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_weed_pi - se_weed_pi,
+                    ymax = avg_weed_pi + se_weed_pi),
+                width = 0.06, size = 1)+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_weed), size = 5)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1), 
+                     breaks = c(0.0, 0.25, 0.50, 0.75, 1.0))+
+  ggtitle("A. All Weeds")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = "Relative Cover") +
+  theme(axis.text   = element_text(size = 14),
+        axis.title.y = element_text(size = 18),
+        plot.title  = element_text(size = 18))
+plotb <- ggplot(gg_wc, aes(season_seeded, avg_wp_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_wp_pi - se_wp_pi,
+                    ymax = avg_wp_pi + se_wp_pi),
+                width = 0.06, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1),
+                     breaks = c(0.0, 0.25, 0.50, 0.75, 1.0))+
+  ggtitle("B. Perennials")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = NULL) +
+  theme(axis.text.x = element_text(size = 14),
+        axis.text.y = element_blank(),
+        plot.title  = element_text(size = 18))
+
+plotc <- ggplot(gg_wc, aes(season_seeded, avg_wa_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_wa_pi - se_wa_pi,
+                    ymax = avg_wa_pi + se_wa_pi),
+                width = 0.06, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 1.1), 
+                     breaks = c(0.0, 0.25, 0.50, 0.75, 1.0))+
+  ggtitle("C. Annuals")+
+  guides(color = FALSE)+
+  labs(x = NULL, 
+       y = NULL) +
+  theme(axis.text.x = element_text(size = 14),
+        axis.text.y = element_blank(),
+        plot.title  = element_text(size = 18))
+
+plota + plotb + plotc

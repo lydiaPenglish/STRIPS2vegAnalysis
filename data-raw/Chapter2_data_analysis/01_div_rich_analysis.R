@@ -3,6 +3,7 @@ library(tidyverse)
 library(STRIPS2veg)
 library(ggResidpanel)
 library(performance)
+library(extrafont)
 data("all_site_info")
 data("site_div_rich")
 
@@ -55,7 +56,13 @@ anova(g3, g4)  # keep!
 resid_panel(g3)
 summary(g3)
 confint.merMod(g3) 
-# slopes = 0.371 (species seeded) and 2.58 (log(hectares_in_strips))
+# checking model...
+performance::r2(g3)
+performance::check_model(g3)
+performance::model_performance(g3)
+rand(g3)   # random effect matters
+
+  # slopes = 0.371 (species seeded) and 2.58 (log(hectares_in_strips))
 2.58710*log(2) # change in diveristy when area in doubled
 0.9436*log(2)
 4.23006*log(2)
@@ -66,59 +73,37 @@ confint.merMod(g3)
 
 exp(1/2.58710)
 
-# checking model...
-performance::r2(g3)
-performance::check_model(g3)
-performance::model_performance(g3)
-rand(g3)   # random effect matters
-
-
-
 # plotting predictions
 x2s = c(-.7,0.4,1.61)
 # equivalent to 0.5 hectares, 1.5 hectares, and 5 hectares
 
-m18 <- lm(gamma_div ~ species_seeded + log(hectares_in_strips),
-         data = filter(site_div_rich, year == "2018"))
-summary(m18)
-cfs_18 <- coef(m18)
-cfs_18[1]+cfs_18[3]*x2s[3]    # intercepts
-slopes <- data.frame(int = c(6.240094, 9.14336 , 12.33695 ),
-                     sl  = c(0.2785, 0.2785, 0.2785),
+cfs <- coef(g3)
+intercept <- 6.71 
+sm_sl <- 0.3707452
+size_sl <- 2.587102
+mean(cfs$siteID$`(Intercept)`)
+intercept + size_sl*x2s[3]
+
+slopes <- data.frame(int = c(4.899029, 7.744841, 10.87523),
+                     sl  = c(0.3707452, 0.3707452, 0.3707452),
                      id  = c("0.5 ha", "1.5 ha", "5 ha"))
 
-p1 <- site_div_rich %>%
-  filter(year == "2018") %>%
-  ggplot(aes(species_seeded, gamma_div))+
-  scale_y_continuous(limits = c(0, 35))+
-  scale_x_continuous(limits = c(15, 55))+
-  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id), 
-              size = 1)+
-  labs(x = "species_seeded",
-       y = "Predicted gamma diversity")
-p1
-
-m19 <- lm(gamma_div ~ species_seeded + log(hectares_in_strips),
-      data = filter(site_div_rich, year == "2019"))
-summary(m19)
-cfs_19 <- coef(m19)
-cfs_19[1]+cfs_19[3]*x2s[1] 
-slope2 <- data.frame(int = c(3.553248, 6.390667, 9.511829),
-                     sl  = c(0.4097232, 0.4097232, 0.4097232),
-                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
-
-p2 <- site_div_rich %>%
+site_div_rich %>%
   filter(year == "2019") %>%
   ggplot(aes(species_seeded, gamma_div))+
-  scale_y_continuous(limits = c(0, 35))+
-  scale_x_continuous(limits = c(15, 55))+
-  geom_abline(data = slope2, aes(intercept = int, slope = sl, color = id), 
-              size = 1)+
-  labs(x = "species_seeded",
-       y = "Predicted gamma diversity")
-p2
-library(patchwork)  
-p1 + p2
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id),
+              size = 1.5)+
+  scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+                     guide = guide_legend(reverse = TRUE))+
+  labs(x = "Seed mix richness",
+       y = "Gamma diversity (e^H')") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        axis.text = element_text(size = 12, family = "Fira Sans"))
+
 
 # aside... is there the same relationship with number of strips?
 data("strips")
@@ -189,6 +174,19 @@ rand(b3) # random effect matters
 performance::check_model(b3)
 performance::r2(b3)
 
+#plot
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, beta_div))+
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(intercept = 1.59061, slope = 0.04548, size = 1.5, color = "#C669D5") +
+  theme_bw()+
+  labs(y = "Beta Diversity",
+       x = "Seed mix richness")+
+  theme(axis.title = element_text(size = 14, family = "Fira Sans"),
+        axis.text = element_text(size = 12, family = "Fira Sans"))
+  
+
 # 2C. ------ Alpha diveristy models ----------------------
 data("quad_div_rich")
 hist(quad_div_rich$alpha_div)
@@ -224,7 +222,40 @@ rand(a2)             # both random effects matter
 performance::r2(a2)  # model explains less than gamma/beta diversity models
 performance::check_model(a2)
 
+predict(a2, newdata = quad_div_rich)
 
+predict(m, newdata = df, se.fit = T, interval='confidence')
+
+# plot 
+quad_div_rich %>%
+  filter(year == "2019" & !(is.na(species_seeded))) %>%
+  group_by(siteID) %>%
+  mutate(avg_alpha = mean(alpha_div)) %>%
+  ggplot(aes(age_yrs, alpha_div))+
+  geom_point(alpha = 0.15)+
+  geom_point(aes(age_yrs, avg_alpha), size = 4)+
+  geom_abline(intercept = 9.570565, slope = -0.627538, size = 1.5, color = "#C669D5") +
+  theme_bw()+
+  labs(y = "Alpha Diversity",
+       x = "Age (years)")+
+  theme(axis.title = element_text(size = 14, family = "Fira Sans"),
+        axis.text = element_text(size = 12, family = "Fira Sans"))
+
+quad_div_rich %>%
+  filter(year == "2019" & !(is.na(species_seeded))) %>%
+  group_by(siteID) %>%
+  mutate(avg_alpha = mean(alpha_div)) %>%
+  ggplot(aes(log(hectares_in_strips), alpha_div))+
+  geom_point(alpha = 0.15)+
+  geom_point(aes(log(hectares_in_strips), avg_alpha), size = 4)+
+  #geom_abline(intercept = 9.570565, slope = 0.710130, size = 1.5, color = "#C669D5") +
+  geom_smooth(method = "lm", se = FALSE)+
+  theme_bw()+
+  labs(y = "Alpha Diversity",
+       x = "log(Hectares in strips)")+
+  theme(axis.title = element_text(size = 14, family = "Fira Sans"),
+        axis.text = element_text(size = 12, family = "Fira Sans"))
+ranef(a2)
 # 3A. ------ Richness of the prairie community ---------------
 
 hist(site_div_rich$p_rich)
@@ -286,14 +317,14 @@ anova(p0, p_log)    # out!
 anova(p0)
 
 # nix age
-p1 <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + 
+p1 <- lmer(log(p_rich) ~ year + species_seeded + log(hectares_in_strips) + 
              season_seeded +
              (1|siteID), site_div_rich)
 anova(p0, p1) # out!
 anova(p1)
 
 # nix season
-p2 <- lmer(log_p_rich ~ year + species_seeded + log(hectares_in_strips) + 
+p2 <- lmer(log(p_rich) ~ year + species_seeded + log(hectares_in_strips) + 
              (1|siteID), site_div_rich)
 anova(p1, p2) # out!
 anova(p2)
@@ -301,7 +332,9 @@ anova(p2)
 # p2 is the final model 
 summary(p2)
 confint.merMod(p2)
-exp(0.016765)                 # slope for species_seeded
+exp(0.016765)   
+exp(0.016765*5)
+# slope for species_seeded
 (exp(0.016765)-1)*100         # percent increase
 confint.merMod(p2) %>% exp()  # CI for percent increase
 
@@ -313,6 +346,10 @@ anova(p2)
 performance::check_model(p2)
 performance::r2(p2)
 rand(p2)
+
+x2s = c(-.7,0.4,1.61)
+# equivalent to 0.5 hectares, 1.5 hectares, and 5 hectares
+
 
 # 3B. ------ Richness of the weedy community -------------
 hist(site_div_rich$w_rich)

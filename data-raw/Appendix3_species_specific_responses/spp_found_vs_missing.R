@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(STRIPS2veg)
+library(extrafont)
 data("species_list")
 data("veg_site")
 data("extra_spp")
@@ -105,10 +106,14 @@ p1 <- sometimes_forb %>%
          size = guide_legend(order = 0))+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
-        axis.text.x = element_text(size = rel(1.1)),
-        axis.text.y = element_text(size = rel(1.1), face = "italic"),
-        axis.title  = element_text(size = rel(1.15)),
-        plot.title  = element_text(size = rel(1.3), face= "bold"),
+        legend.text = element_text(family = "Fira Sans"),
+        legend.title = element_text(family = "Fira Sans"),
+        legend.position = "bottom",
+        legend.direction = "vertical",
+        axis.text.x = element_text(size = rel(1.1), family = "Fira Sans"),
+        axis.text.y = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
+        axis.title  = element_text(size = rel(1.15), family = "Fira Sans"),
+        plot.title  = element_text(size = rel(1.3), face= "bold", family = "Fira Sans"),
         plot.title.position = "plot")
 p1
 p2 <- sometimes_grass %>%
@@ -131,10 +136,14 @@ p2 <- sometimes_grass %>%
          size = guide_legend(order = 0))+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
-        axis.text.y  = element_text(size = rel(1.1), face = "italic"),
-        axis.text.x  = element_text(size = rel(1.1)),
-        axis.title = element_text(size = rel(1.15)),
-        plot.title = element_text(size = rel(1.3), face= "bold"),
+        legend.text = element_text(family = "Fira Sans"),
+        legend.title = element_text(family = "Fira Sans"),
+        legend.position = "bottom",
+        legend.direction = "vertical",
+        axis.text.x = element_text(size = rel(1.1), family = "Fira Sans"),
+        axis.text.y = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
+        axis.title  = element_text(size = rel(1.15), family = "Fira Sans"),
+        plot.title  = element_text(size = rel(1.3), face= "bold", family = "Fira Sans"),
         plot.title.position = "plot")
 p2
 library(patchwork)
@@ -159,10 +168,13 @@ always %>%
          color = FALSE)+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
+        legend.text  = element_text(family = "Fira Sans"),
+        legend.title = element_text(family = "Fira Sans"),
         axis.text.x  = element_text(size = rel(1.1)),
-        axis.text.y  = element_text(size = rel(1.1), face = "italic"),
-        axis.title = element_text(size = rel(1.15)),
-        plot.title = element_text(size = rel(1.3), hjust = 0.5, face= "bold"))
+        axis.text.y  = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
+        axis.title   = element_text(size = rel(1.15), family = "Fira Sans"),
+        plot.title   = element_text(size = rel(1.3), hjust = 0.5, face= "bold", 
+                                    family = "Fira Sans"))
 
 never %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
