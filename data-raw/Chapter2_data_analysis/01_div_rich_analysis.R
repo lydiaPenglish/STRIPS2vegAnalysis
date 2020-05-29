@@ -226,6 +226,15 @@ predict(a2, newdata = quad_div_rich)
 
 predict(m, newdata = df, se.fit = T, interval='confidence')
 
+x2s = c(-.7,0.4,1.61)
+intercept <- 9.570565
+size_sl <- 0.710130
+intercept + size_sl*x2s[3]
+
+slopes <- data.frame(int = c(9.073474, 9.854617, 10.71387),
+                     sl  = c(-0.627538, -0.627538, -0.627538),
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
+
 # plot 
 quad_div_rich %>%
   filter(year == "2019" & !(is.na(species_seeded))) %>%
@@ -234,28 +243,18 @@ quad_div_rich %>%
   ggplot(aes(age_yrs, alpha_div))+
   geom_point(alpha = 0.15)+
   geom_point(aes(age_yrs, avg_alpha), size = 4)+
-  geom_abline(intercept = 9.570565, slope = -0.627538, size = 1.5, color = "#C669D5") +
+  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id), 
+              size = 1.5) +
+  scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+                     guide = guide_legend(reverse = TRUE))+
   theme_bw()+
   labs(y = "Alpha Diversity",
-       x = "Age (years)")+
+       x = "Age (years)",
+       color = NULL)+
   theme(axis.title = element_text(size = 14, family = "Fira Sans"),
-        axis.text = element_text(size = 12, family = "Fira Sans"))
+        axis.text = element_text(size = 12, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"))
 
-quad_div_rich %>%
-  filter(year == "2019" & !(is.na(species_seeded))) %>%
-  group_by(siteID) %>%
-  mutate(avg_alpha = mean(alpha_div)) %>%
-  ggplot(aes(log(hectares_in_strips), alpha_div))+
-  geom_point(alpha = 0.15)+
-  geom_point(aes(log(hectares_in_strips), avg_alpha), size = 4)+
-  #geom_abline(intercept = 9.570565, slope = 0.710130, size = 1.5, color = "#C669D5") +
-  geom_smooth(method = "lm", se = FALSE)+
-  theme_bw()+
-  labs(y = "Alpha Diversity",
-       x = "log(Hectares in strips)")+
-  theme(axis.title = element_text(size = 14, family = "Fira Sans"),
-        axis.text = element_text(size = 12, family = "Fira Sans"))
-ranef(a2)
 # 3A. ------ Richness of the prairie community ---------------
 
 hist(site_div_rich$p_rich)
@@ -349,6 +348,27 @@ rand(p2)
 
 x2s = c(-.7,0.4,1.61)
 # equivalent to 0.5 hectares, 1.5 hectares, and 5 hectares
+2.478392 + 0.080320*x2s[2]
+
+slopes <- data.frame(int = c(2.422168, 2.51052, 2.607707),
+                     sl  = c(0.016765, 0.016765, 0.016765),
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
+
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, p_rich))+
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id),
+              size = 1.5)+
+  scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+                     guide = guide_legend(reverse = TRUE))+
+  scale_y_continuous(trans = "log", breaks = c(10, 20, 30), limits = c(10, 40))+
+  labs(color = NULL,
+       x = "Seed mix richness", 
+       y = "Prairie species richness")+
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"))
 
 
 # 3B. ------ Richness of the weedy community -------------
@@ -395,7 +415,7 @@ anova(w3, w2)    # out!
 anova(w3)
 
 # nix size
-w4 <- lmer(log_w_rich ~ year + species_seeded + 
+w4 <- lmer(log(w_rich) ~ year + species_seeded + 
              (1|siteID), site_div_rich)
 anova(w3, w4)       # out!
 
@@ -407,6 +427,27 @@ performance::compare_performance(w_log, w1, w2, w3, w4)  # yup w4 is the best
 performance::r2(w4)                                  # woof fixed effects explain little variation
 performance::check_model(w4)
 rand(w4)
+
+slopes <- data.frame(int = c(2.422168, 2.51052, 2.607707),
+                     sl  = c( 0.012534,  0.012534,  0.012534),
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
+
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, w_rich))+
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(intercept = 2.498264, slope = 0.012534,
+             size = 1.5)+
+  #scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+   #                  guide = guide_legend(reverse = TRUE))+
+  scale_y_continuous(trans = "log", breaks = c(10, 20, 30), limits = c(10, 40))+
+  labs(color = NULL,
+       x = "Seed mix richness", 
+       y = "Weedy species richness")+
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"))
+
 # 4A. ------ Alpha prairie richness ----------
 quad_div_rich <- 
   quad_div_rich %>%

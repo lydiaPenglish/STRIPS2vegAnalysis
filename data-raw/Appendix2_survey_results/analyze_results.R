@@ -1,9 +1,11 @@
 # Looking at survey results
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(patchwork)         # for putting plots together
 theme_set(theme_bw())
-init_surv  <- read_csv("data-raw/Appendix2_survey_results/initial_survey_results.csv")
-final_surv <- read_csv("data-raw/Appendix2_survey_results/final_survey_results.csv")
+library(extrafont)
+init_surv  <- readr::read_csv("data-raw/Appendix2_survey_results/initial_survey_results.csv")
+final_surv <- readr::read_csv("data-raw/Appendix2_survey_results/final_survey_results.csv")
 
 # How many people answered the survey?
 
@@ -21,7 +23,7 @@ final_resp <-
 all_surv <- 
   bind_rows(init_resp, final_resp) %>%
   arrange(survey_code) %>%
-  mutate(surv = as_factor(surv))
+  mutate(surv = forcats::as_factor(surv))
 
 # Question 1. Number of grasses species identified
 # change in grass id
@@ -51,8 +53,9 @@ q1 <- all_surv %>%
   guides(color = FALSE)+
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
   scale_y_continuous(breaks = c(0, 5, 10, 15))+
-  theme(axis.text.x = element_text(size = rel(1.5)),
-        axis.text.y = element_text(size = rel(1.25))) 
+  theme(axis.text.x = element_text(size = 12, family = "Fira Sans"),
+        axis.text.y = element_text(size = 14, family = "Fira Sans"),
+        title = element_text(size = 16, family = "Fira Sans")) 
 q1 
 # Question 2. Number of forbs sepcies identified
 forb_change <- 
@@ -81,8 +84,9 @@ q2 <-
   ggtitle("B. Forbs")+
   guides(color = FALSE)+
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
-  theme(axis.text.x = element_text(size = rel(1.5)),
-        axis.text.y = element_text(size = rel(1.25))) 
+  theme(axis.text.x = element_text(size = 12, family = "Fira Sans"),
+        axis.text.y = element_text(size = 14, family = "Fira Sans"),
+        title = element_text(size = 16, family = "Fira Sans"))
 q2
 q1 + q2
 
@@ -96,16 +100,17 @@ q3 <-
        y = "# of Respondents")+
   facet_wrap(~surv)+
   scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10))+
-  theme(axis.text  = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.4)),
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
         strip.background = element_rect(fill = "white"),
-        strip.text = element_text(size = rel(1.5)))
+        strip.text = element_text(size = 15, family = "Fira Sans"))
+q3
 
 # Question 4 - methods to identify plants
 
 q4_df <- 
   all_surv %>%
-  pivot_longer(cols = c(stratA:stratE), names_to = "strategy_type", values_to = "pref") %>%
+  tidyr::pivot_longer(cols = c(stratA:stratE), names_to = "strategy_type", values_to = "pref") %>%
   select(survey_code, surv, strategies, strategy_type, pref) 
 
 q4 <- 
@@ -138,3 +143,13 @@ final_resp %>%
   group_by(idChange) %>%
   count()
 
+q6 <- data.frame(resp = c("Increased", "Stayed the same", "decreased"),
+                 n    = c(12, 3, 0))
+
+ggplot(q6, aes(resp, n))+
+  geom_col(fill = "grey", color = "black")+
+  scale_x_discrete(limits = c("Increased", "Stayed the same", "Decreased"))+
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))+
+  labs(x = NULL, y = "# of Respondents")+
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"))

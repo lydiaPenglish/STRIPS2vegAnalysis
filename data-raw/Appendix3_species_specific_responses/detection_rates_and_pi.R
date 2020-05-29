@@ -3,6 +3,7 @@
 
 library(tidyverse)
 library(STRIPS2veg)
+library(extrafont)
 data("species_list")
 data("all_site_info")
 data("veg_site")
@@ -53,7 +54,7 @@ p1 <- sm_found %>%
   mutate(siteID = fct_reorder(siteID, desc(prop_found))) %>%
   ggplot(aes(siteID, prop_found))+
   geom_point(aes(size = n_seeded))+
-  labs(x = NULL, y = "Proportion of species detected",
+  labs(x = NULL, y = "Proportion of seed mix detected",
        size = "Number of \nspecies seeded")+
   coord_flip()+
   theme_bw()+
@@ -63,6 +64,19 @@ p1 <- sm_found %>%
         axis.title = element_text(size = rel(1.2)))+
   scale_y_continuous(limits = c(0.4, 1))
 p1
+
+sm_found %>%
+  ggplot(aes(species_seeded, prop_found))+
+  geom_point(size = 2, color = "#7A4FB6")+
+  geom_hline(yintercept = 0.5, lty = 2)+
+  scale_y_continuous(limits = c(0.25, 1), breaks = c(.25, 0.50, 0.75, 1))+
+  labs(x = "Seedmix Richness",
+       y = "Proportion of Seedmix \nDetected")+
+  theme_bw() +
+  theme(axis.title = element_text(size = 14, family = "Fira Sans"),
+        axis.text = element_text(size = 12, family = "Fira Sans"))
+  
+
 
 # ---- Modeling detection rate as a function of covariate - NS bc of anything ----
 

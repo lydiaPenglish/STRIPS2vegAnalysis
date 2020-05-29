@@ -1,16 +1,17 @@
 # Script that visualizes which species that are always, sometimes, and never found
 
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(STRIPS2veg)
 library(extrafont)
 data("species_list")
 data("veg_site")
 data("extra_spp")
 nat_codes <- species_list %>%                 # 5 letter codes for prairie species
-  filter(str_detect(group, "^prairie")) %>%
+  filter(stringr::str_detect(group, "^prairie")) %>%
   dplyr::select(speciesID) %>%
   unlist()
-sm <- read_csv("data-raw/seed_mix_info/all_site_seed_list.csv") # seed mix for each site
+sm <- readr::read_csv("data-raw/seed_mix_info/all_site_seed_list.csv") # seed mix for each site
 my_cols <- c("#361554", "#7A4FB6", "#C7B1F2", "#E99725", 
              "#8B1C38", "#D3BE17", 
              "#8FA844", "#4C7A3D")
@@ -57,13 +58,13 @@ always <- found_missing %>%
   filter(proportion_found == 1) %>%
   mutate(group_simple2 = case_when(family != "fabaceae" ~ group_simple,
                                    TRUE ~ "legume"),
-         group_simple2 = str_to_title(recode(group_simple2, 
+         group_simple2 = stringr::str_to_title(recode(group_simple2, 
                                 forb    = "non-leguminous forb")))
 never <- found_missing %>%
   filter(proportion_found == 0) %>%
   mutate(group_simple2 = case_when(family != "fabaceae" ~ group_simple,
                                    TRUE ~ "legume"),
-         group_simple2 = str_to_title(recode(group_simple2, 
+         group_simple2 = stringr::str_to_title(recode(group_simple2, 
                                              forb    = "non-leguminous forb")))
 # further separating grasses from forbs
 sometimes_grass <- found_missing %>%
@@ -77,7 +78,7 @@ sometimes_forb <- found_missing %>%
          fam_simp = recode(fam_simp, 
                            fabaceae = "legume",
                            other    = "non-leguminous forb"),
-         fam_simp = str_to_title(fam_simp)) 
+         fam_simp = stringr::str_to_title(fam_simp)) 
 # other version where I had more than one family
 # sometimes_forb <-  found_missing %>%
 #   filter(proportion_found > 0 & proportion_found < 1) %>%
@@ -151,7 +152,7 @@ p1 + p2
 
 always %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
-             fill = str_wrap(group_simple2,15)))+
+             fill = stringr::str_wrap(group_simple2,15)))+
   geom_bar(aes(color = group_simple2),
            stat = "identity", size = 1)+
   geom_hline(yintercept = 5, lty = 2)+
@@ -178,7 +179,7 @@ always %>%
 
 never %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
-             color = group_simple2, fill = str_wrap(group_simple2,15)))+
+             color = group_simple2, fill = stringr::str_wrap(group_simple2,15)))+
   geom_bar(stat = "identity", size = 1)+
   coord_flip()+
   theme_bw()+
@@ -202,10 +203,12 @@ never %>%
                           )),
          color = FALSE)+
   theme(legend.background = element_rect(color = "black"),
-        axis.text.x = element_text(size = rel(1.1)),
-        axis.text.y = element_text(size = rel(1.1), face = "italic"),
-        axis.title  = element_text(size = rel(1.15)),
-        plot.title  = element_text(size = rel(1.3), hjust = 0.5, face= "bold"))
+        axis.text.x = element_text(size = 12, family = "Fira Sans"),
+        axis.text.y = element_text(size = 12, face = "italic", family = "Fira Sans"),
+        axis.title  = element_text(size = 14, famil = "Fira Sans"),
+        plot.title  = element_text(size = rel(1.3), hjust = 0.5, face= "bold"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"))
 
 # as an aside, how many praire species did we find ....
 

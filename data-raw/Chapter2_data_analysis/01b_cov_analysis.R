@@ -7,6 +7,7 @@ library(STRIPS2veg)
 library(ggResidpanel)
 library(performance)
 library(patchwork)
+library(extrafont)
 theme_set(theme_bw())
 
 source("data-raw/00b_format_veg_cov_data.R")
@@ -508,6 +509,12 @@ performance::check_model(wa3)
 performance::r2(wa3)
 rand(wa3)                  # site doesn't matter...
 
+weedy_pi %>%
+  ggplot(aes(age_yrs, log(wa_pi)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~year)
+
 # ---- prairie vs weedy cover/richness ----
 data("site_div_rich")
 
@@ -519,23 +526,30 @@ df <- data.frame(year = c("2018", "2019"),
                  slps = c(-1.28937, -1.28937))
 
 pra_cov <- 
-  ggplot(pra_vs_wd, aes(prairie_pi, log(w_rich)))+
+  ggplot(pra_vs_wd, aes(prairie_pi, w_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df, aes( 
               intercept = ints, slope = slps,
               color = year), lty = 2, size = 1)+
-  geom_text(aes(0.75, 3.7), label = "R[m]^2 == 0.48", parse = TRUE)+
-  geom_text(aes(0.75, 3.6), label = "p[year] == 0.04", parse = TRUE)+
-  geom_text(aes(0.75, 3.5), label = "p[cov] < 0.001", parse = TRUE)+
+  geom_text(aes(0.75, 43), label = "R[m]^2 == 0.48", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.75, 39), label = "p[year] == 0.04", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.75, 36), label = "p[cov] < 0.001", parse = TRUE,
+            family = "Fira Sans")+
   labs(x = "Relative Cover",
-       y = "log( Weed Species Richness )",
+       y = "Weed Species Richness",
        color = "Year sampled",
        fill = "Year sampled")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
   ggtitle("A. All Prairie")+
-  theme(axis.text  = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 pra_cov
 
 pw1 <- lmer(log(w_rich) ~ year + prairie_pi + (1|siteID), pra_vs_wd)
@@ -553,24 +567,30 @@ df2 <- data.frame(year = c("2018", "2019"),
                   slps = c(-0.96636, -0.96636))
 
 pg_cov <- 
-  ggplot(pra_vs_wd, aes(pg_pi, log(w_rich)))+
+  ggplot(pra_vs_wd, aes(pg_pi, w_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df2, aes( 
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
-  geom_text(aes(0.6, 3.7), label = "R[m]^2 == 0.31", parse = TRUE)+
-  geom_text(aes(0.6, 3.6), label = "p[year] == 0.02", parse = TRUE)+
-  geom_text(aes(0.6, 3.5), label = "p[cov] == 0.002", parse = TRUE)+
+  geom_text(aes(0.6, 43), label = "R[m]^2 == 0.31", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.6, 39), label = "p[year] == 0.02", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.6, 36), label = "p[cov] == 0.002", parse = TRUE,
+            family = "Fira Sans")+
   labs(x = "Relative Cover",
        y = NULL,
        color = "Year sampled",
        fill = "Year sampled")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
   ggtitle("B. Grasses")+
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_blank(),
-        axis.title  = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 pg_cov
 
 gw1 <- lmer(log(w_rich) ~ year+pg_pi + (1|siteID), pra_vs_wd)
@@ -588,25 +608,31 @@ df3 <- data.frame(year = c("2018", "2019"),
                   slps = c(0.06113, -1.00018))
 
 pf_cov <- 
-  ggplot(pra_vs_wd, aes(pf_pi, log(w_rich)))+
+  ggplot(pra_vs_wd, aes(pf_pi, w_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df3, aes( 
           intercept = ints, slope = slps,
           color = year), lty = 2, size = 1)+
  # geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.45, 3.8), label = "R[m]^2 == 0.14", parse = TRUE)+
-  geom_text(aes(0.45, 3.7), label = "p[year] == 0.002", parse = TRUE)+
-  geom_text(aes(0.45, 3.6), label = "p[cov] == 0.29", parse = TRUE)+
-  geom_text(aes(0.45, 3.5), label = "p[year*cov] == 0.02", parse = TRUE)+
+  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.14", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.45, 39), label = "p[year] == 0.002", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.45, 36), label = "p[cov] == 0.29", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(0.45, 33), label = "p[year*cov] == 0.02", parse = TRUE)+
   labs(x = "Relative Cover",
        y = NULL, color = "Year sampled",
        fill = "Year sampled")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
   ggtitle("C. Forbs")+
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_blank(),
-        axis.title  = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 pf_cov
 library(patchwork)
 pra_cov + pg_cov + pf_cov + plot_layout(guides = 'collect')
@@ -624,24 +650,31 @@ df4 <- data.frame(year = c("2018", "2019"),
                   ints = c(3.227344, 3.23229),
                   slps = c(-0.495855, -0.495855))
 w_cov <- 
-  ggplot(wd_vs_pra, aes(weed_pi, log(p_rich)))+
+  ggplot(wd_vs_pra, aes(weed_pi, p_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df4, aes( 
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.7, 3.7), label = "R[m]^2 == 0.13", parse = TRUE)+
-  geom_text(aes(0.7, 3.6), label = "p[year] == 0.92", parse = TRUE)+
-  geom_text(aes(0.7, 3.5), label = "p[cov] == 0.04", parse = TRUE)+
+  geom_text(aes(0.7, 43), label = "R[m]^2 == 0.13", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.7, 39), label = "p[year] == 0.92", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.7, 36), label = "p[cov] == 0.04", parse = TRUE, 
+            family = "Fira Sans")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
   ggtitle("A. All Weeds")+
   labs(x = "Relative Cover",
-       y = "log( Prairie Species Richness)", 
+       y = "Prairie Species Richness", 
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text  = element_text(size = 12),
-        axis.title = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 w_cov
 wp1 <- lmer(log(p_rich) ~ year + weed_pi + (1|siteID), wd_vs_pra)
 summary(wp1)
@@ -656,25 +689,31 @@ df5 <- data.frame(year = c("2018", "2019"),
                   slps = c(-0.35135, -0.35135))
 
 aw_cov <- 
-  ggplot(wd_vs_pra, aes(wa_pi, log(p_rich)))+
+  ggplot(wd_vs_pra, aes(wa_pi, p_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df5, aes( 
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.4, 3.7), label = "R[m]^2 == 0.02", parse = TRUE)+
-  geom_text(aes(0.4, 3.6), label = "p[year] == 0.76", parse = TRUE)+
-  geom_text(aes(0.4, 3.5), label = "p[cov] == 0.36", parse = TRUE)+
+  geom_text(aes(0.4, 43), label = "R[m]^2 == 0.02", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.4, 39), label = "p[year] == 0.76", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.4, 36), label = "p[cov] == 0.36", parse = TRUE, 
+            family = "Fira Sans")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
   ggtitle("B. Annual Weeds")+
   labs(x = "Relative Cover",
        y = NULL,
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_blank(),
-        axis.title  = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 aw_cov
 
 ap1 <- lmer(log(p_rich) ~ year + wa_pi + (1|siteID), wd_vs_pra)
@@ -689,25 +728,31 @@ df6 <- data.frame(year = c("2018", "2019"),
                   slps = c(-0.593589, -0.593589))
 
 pw_cov <- 
-  ggplot(wd_vs_pra, aes(wp_pi, log(p_rich)))+
+  ggplot(wd_vs_pra, aes(wp_pi, p_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
   geom_abline(data = df6, aes( 
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.45, 3.7), label = "R[m]^2 == 0.11", parse = TRUE)+
-  geom_text(aes(0.45, 3.6), label = "p[year] == 0.86", parse = TRUE)+
-  geom_text(aes(0.45, 3.5), label = "p[cov] == 0.05", parse = TRUE)+
+  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.11", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.45, 39), label = "p[year] == 0.86", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(0.45, 36), label = "p[cov] == 0.05", parse = TRUE, 
+            family = "Fira Sans")+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
   ggtitle("C. Perennial Weeds")+
   labs(x = "Relative Cover",
        y = NULL,
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text.x = element_text(size = 12),
-        axis.text.y = element_blank(),
-        axis.title  = element_text(size = 14))
+  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"),
+        legend.title = element_text(size = 14, family = "Fira Sans"),
+        legend.text = element_text(size = 12, family = "Fira Sans"),
+        plot.title = element_text(size = 15, family = "Fira Sans"))
 pw_cov
 
 pp1 <- lmer(log(p_rich) ~ year + wp_pi + (1|siteID), wd_vs_pra)
@@ -816,13 +861,40 @@ leg_PLS_pi <- seed_div %>%
   left_join(all_site_info, by = "siteID")
 
 leg_PLS_pi %>%
-  ggplot(aes(age_yrs, car::logit(leg_PLS_pi)))+
-  geom_point()+
-  geom_smooth(method = "lm")
+  ggplot(aes(age_yrs, log(leg_PLS_pi)))+
+  geom_point(size = 2)+
+  geom_smooth(method = "lm", se = FALSE, color = "#361554", size = 1, lty = 2)+
+  labs(x = "Site age (yrs)",
+       y = "Legume PLS proportion\n (log)")+
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"))
+
+leg_PLS_pi %>%
+  ggplot(aes(age_yrs, leg_PLS_pi))+
+  geom_point(size = 2)+
+  geom_abline(slope = -0.5627, intercept = 1.0519, size = 1,
+              lty = 2, color = "#361554")+
+  geom_text(aes(7, 0.45), label = "R^2 == 0.56", parse = TRUE, 
+            family = "Fira Sans")+
+  geom_text(aes(7, 0.35), label = "p < 0.001", parse = TRUE,
+            family = "Fira Sans")+
+  geom_text(aes(7, 0.3), label = "n == 15", parse = TRUE,
+            family = "Fira Sans")+
+  scale_y_continuous(trans = "log", breaks = c(0.05, 0.1, 0.25, 0.5))+
+  labs(x = "Site Age (yrs)",
+       y = "Legume PLS proportion")+
+  theme(axis.text = element_text(size = 12, family = "Fira Sans"),
+        axis.title = element_text(size = 14, family = "Fira Sans"))
+
 
 leg2 <- lm(car::logit(leg_PLS_pi) ~ age_yrs, leg_PLS_pi)
 summary(leg2)
 performance::check_model(leg2)
+
+leg3 <- lm(log(leg_PLS_pi) ~ age_yrs, leg_PLS_pi)
+summary(leg3)
+ggResidpanel::resid_panel(leg3)
+
 
 # yes, negative relationship between relative proportion of seed mix in legume seeds 
 # and the age of sites
