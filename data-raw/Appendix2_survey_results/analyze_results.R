@@ -53,9 +53,9 @@ q1 <- all_surv %>%
   guides(color = FALSE)+
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
   scale_y_continuous(breaks = c(0, 5, 10, 15))+
-  theme(axis.text.x = element_text(size = 12, family = "Fira Sans"),
-        axis.text.y = element_text(size = 14, family = "Fira Sans"),
-        title = element_text(size = 16, family = "Fira Sans")) 
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 14),
+        title = element_text(size = 16)) 
 q1 
 # Question 2. Number of forbs sepcies identified
 forb_change <- 
@@ -84,9 +84,9 @@ q2 <-
   ggtitle("B. Forbs")+
   guides(color = FALSE)+
   scale_color_manual(values = c("#8FB440", "#6C7258", "grey"))+
-  theme(axis.text.x = element_text(size = 12, family = "Fira Sans"),
-        axis.text.y = element_text(size = 14, family = "Fira Sans"),
-        title = element_text(size = 16, family = "Fira Sans"))
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 14),
+        title = element_text(size = 16))
 q2
 q1 + q2
 
@@ -100,10 +100,10 @@ q3 <-
        y = "# of Respondents")+
   facet_wrap(~surv)+
   scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10))+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
         strip.background = element_rect(fill = "white"),
-        strip.text = element_text(size = 15, family = "Fira Sans"))
+        strip.text = element_text(size = 15))
 q3
 
 # Question 4 - methods to identify plants
@@ -130,12 +130,14 @@ q4 <-
         strip.background = element_rect(fill = "white"),
         strip.text = element_text(size = rel(1.5)))+
   coord_flip()
+q4
 
 # Question 5. Favorite prairie plant
 
 favs <- 
   all_surv %>%
   select(survey_code, surv, favorite)
+favs
 
 # Question 6. Looking at change in ID
  
@@ -144,7 +146,7 @@ final_resp %>%
   count()
 
 q6 <- data.frame(resp = c("Increased", "Stayed the same", "decreased"),
-                 n    = c(12, 3, 0))
+                 n    = c(13, 3, 0))
 
 ggplot(q6, aes(resp, n))+
   geom_col(fill = "grey", color = "black")+
