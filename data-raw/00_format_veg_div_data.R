@@ -18,6 +18,7 @@ midpoints <-
                            '75-95' = 85, 
                            '>95' = 97.5))%>%
   select(year:speciesID, midpoint) %>%
+  # take out quadrats that were not "in strips" from 2018
   filter(!stringr::str_detect(quadratID, 
                               "bue_2_\\d|isb_2_\\d|stt_[123]_\\d|gos_[^123]_\\d"))
 

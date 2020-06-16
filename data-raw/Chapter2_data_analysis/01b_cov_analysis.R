@@ -10,7 +10,8 @@ library(patchwork)
 library(extrafont)
 theme_set(theme_bw())
 
-source("data-raw/00b_format_veg_cov_data.R")
+data("prairie_pi")
+data("weedy_pi")
 
 # backtranform logit estimates to probabilites
 logit2prob <- function(logit){
@@ -38,7 +39,7 @@ plot_dat <- function(dat, yy){
   zz + ww + plot_layout(widths = c(3, 1))
 }
 
-# I will model the avg cover of ...
+# I will model the relative cover of ...
 # 1. All prairie spp
 # 2. Prairie grasses (and then C3 vs C4 grass)
 # 3. Prairie forbs (and then leguminous vs non-leguminous forbs)
@@ -57,27 +58,27 @@ p0 <- lmer(prairie_pi_logit ~ year + species_seeded + age_yrs +
 summary(p0)
 anova(p0)
 
-# nix p_a ratio
-p1 <- lmer(prairie_pi_logit ~ year + species_seeded + age_yrs + 
-             log(hectares_in_strips) + season_seeded + 
+# nix age
+p1 <- lmer(prairie_pi_logit ~ year + species_seeded + 
+             log(hectares_in_strips) + log(avg_p_a) +season_seeded + 
              (1|siteID), prairie_pi)
 anova(p0, p1)    # out! 
 anova(p1)
 
-# nix age
-p2 <- lmer(prairie_pi_logit ~ year + species_seeded + log(hectares_in_strips) + season_seeded + 
+# nix size
+p2 <- lmer(prairie_pi_logit ~ year + species_seeded + log(avg_p_a) + season_seeded + 
              (1|siteID), prairie_pi)
 anova(p1, p2)     # out!
 anova(p2)
 
-# nix season
-p3 <- lmer(prairie_pi_logit ~ year + species_seeded + log(hectares_in_strips) + 
+# nix p-to-a ratio
+p3 <- lmer(prairie_pi_logit ~ year + species_seeded + season_seeded + 
              (1|siteID), prairie_pi)
 anova(p2, p3)     # out!
 anova(p3)
 
-# nix size
-p4 <- lmer(prairie_pi_logit ~ year+species_seeded +
+# nix season
+p4 <- lmer(prairie_pi_logit ~ year + species_seeded +
                    (1|siteID), prairie_pi)
 anova(p3, p4)
 
@@ -104,17 +105,17 @@ g0 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs +
 summary(g0)
 anova(g0)
 
-# nix season
+# nix p-to-a ratio
 g1 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
-             log(hectares_in_strips) + log(avg_p_a) +
+             log(hectares_in_strips)  + season_seeded + 
              (1|siteID), prairie_pi)
 anova(g0, g1)     # out!
 anova(g1)
 
-# nix p_a ratio
+# nix season
 
 g2 <- lmer(pg_pi_logit ~ year + species_seeded + age_yrs + 
-             log(hectares_in_strips) + 
+             log(hectares_in_strips)  +  
              (1|siteID), prairie_pi)
 anova(g2, g1)
 anova(g2)
@@ -132,7 +133,6 @@ anova(g4, g3)
 anova(g4)
 
 # final model is g4
-anova(g4)
 summary(g4)
 performance::r2(g4)
 rand(g4)
@@ -192,39 +192,42 @@ c30 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs +
 summary(c30)
 anova(c30)
 
-# nix p_a ratio
-c31 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
-              log(hectares_in_strips) + season_seeded + 
+# nix age
+c31 <- lmer(c3_pi_logit ~ year + species_seeded +
+              log(hectares_in_strips) + log(avg_p_a) + season_seeded + 
               (1|siteID), prairie_pi)
 anova(c30, c31)   # out!
 anova(c31)
 
-# nix size 
-c32 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
-              season_seeded + 
+# nix season 
+c32 <- lmer(c3_pi_logit ~ year + species_seeded +
+              log(hectares_in_strips) + log(avg_p_a) + 
               (1|siteID), prairie_pi)
 anova(c32, c31)   # out!
 anova(c32)
 
-# nix season 
-c33 <- lmer(c3_pi_logit ~ year + species_seeded + age_yrs + 
+# nix size 
+c33 <- lmer(c3_pi_logit ~ year + species_seeded + log(avg_p_a) + 
               (1|siteID), prairie_pi)
-anova(c33, c32)
-anova(c33)
+anova(c33, c32)  # keep!
 
-# nix age - barely significant...
-c34 <- lmer(c3_pi_logit ~ year + species_seeded + 
+# nix edginess
+c34 <- lmer(c3_pi_logit ~ year + species_seeded +
+              log(hectares_in_strips) +  
               (1|siteID), prairie_pi)
-anova(c33, c34)
+anova(c34, c32)  # keep!
 
-anova(c34)
-summary(c34)
+# hmmm now size and edginess are predictors of c3 grasses
+# final model is c32
+
+anova(c32)
+summary(c32)
 
 # seed mix richness barely significant anymore....
-rand(c34)
-performance::r2(c34)
-performance::check_model(c34)
-
+rand(c32)
+performance::r2(c32)
+performance::check_model(c32)
+confint.merMod(c32)
 
 # ---- 3. Prairie forbs ------------------------------------------------------
 plot_dat(prairie_pi, "pf_pi_logit")
@@ -277,7 +280,8 @@ performance::check_model(f4)
 
 # B. legumes - significantly go down with age...
 
-plot_dat(prairie_pi, "leg_pi_logit")
+plot_dat(prairie_pi, "leg_pi_logit") # actually it looks like legumes have a relationship
+# with many of these variables...but definitely the stronges with age
 
 l0 <- lmer(leg_pi_logit ~ year + species_seeded + age_yrs + 
              log(hectares_in_strips) + log(avg_p_a) + season_seeded + 
@@ -318,6 +322,8 @@ l2_log <- lmer(log(leg_pi) ~ year + species_seeded + age_yrs +
                  (1|siteID), prairie_pi)
 summary(l2_log)
 
+
+
 # C. non-leguminous forbs
 plot_dat(prairie_pi, "nl_pi_logit")
 
@@ -354,6 +360,11 @@ nl4 <- lmer(nl_pi_logit ~ year + species_seeded +
 anova(nl3, nl4)     # out!
 anova(nl4)
 
+# double check interaction between year
+nl4b <- lmer(nl_pi_logit ~ year*species_seeded +  
+               (1|siteID), prairie_pi)
+anova(nl4b) # nope! 
+
 # nothing sig, nl4 is the final model
 summary(nl4)
 anova(nl4)
@@ -380,25 +391,28 @@ w0 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs +
           (1|siteID), weedy_pi)
 anova(w0)
 
-# nix p_a ratio
-w1 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
-             log(hectares_in_strips) + 
+# nix age
+w1 <- lmer(weed_pi_logit ~ year + species_seeded + 
+             log(hectares_in_strips) + log(avg_p_a) + 
              season_seeded + 
              (1|siteID), weedy_pi)
 anova(w1, w0)   # out!
 anova(w1)
 
-# nix age
-w2 <- lmer(weed_pi_logit ~ year + species_seeded + log(hectares_in_strips) + season_seeded + 
+# nix size
+w2 <- lmer(weed_pi_logit ~ year + species_seeded +  log(avg_p_a) + 
+             season_seeded + 
              (1|siteID), weedy_pi)
 anova(w2, w1)       # out!
+anova(w2)
 
-# nix season
-w3 <- lmer(weed_pi_logit ~ year + species_seeded + log(hectares_in_strips) +  
+# nix p-a ratio
+w3 <- lmer(weed_pi_logit ~ year + species_seeded + season_seeded +  
             (1|siteID), weedy_pi)
 anova(w2, w3)       # out!
+anova(w3)
 
-# nix size
+# nix season
 w4 <-  lmer(weed_pi_logit ~ year + species_seeded +
               (1|siteID), weedy_pi)
 anova(w3, w4)       # out!
@@ -412,7 +426,7 @@ rand(w4)
 
 # ---- 5. Perennial weeds ----
 # both ok diagnostically, but logit fits better
-plot_dat(weedy_pi, "wp_pi_logit")
+plot_dat(weedy_pi, "wp_pi_logit")  # lots of noise but also expected trends
 
 wp0 <- lmer(wp_pi_logit ~ year + species_seeded + age_yrs + 
               log(hectares_in_strips) + log(avg_p_a) +
@@ -421,30 +435,28 @@ wp0 <- lmer(wp_pi_logit ~ year + species_seeded + age_yrs +
 anova(wp0)
 performance::check_model(wp0)
 
-# nix p_a_ratio
-wp1 <- lmer(wp_pi_logit ~ year + species_seeded + age_yrs + 
-              log(hectares_in_strips) +
+# nix age
+wp1 <- lmer(wp_pi_logit ~ year + species_seeded + 
+              log(hectares_in_strips) + log(avg_p_a) +
               season_seeded + 
               (1|siteID), weedy_pi)
 anova(wp1, wp0)           # out!
 anova(wp1)
 
-# nix age_yrs
-wp2 <- lmer(wp_pi_logit ~ year + species_seeded + 
-              log(hectares_in_strips) + 
+# nix size
+wp2 <- lmer(wp_pi_logit ~ year + species_seeded +  log(avg_p_a) +
               season_seeded + 
               (1|siteID), weedy_pi)
 anova(wp2, wp1)           # out!
 anova(wp2)
 
 # nix season
-wp3 <- lmer(wp_pi_logit ~ year + species_seeded + 
-              log(hectares_in_strips) + 
+wp3 <- lmer(wp_pi_logit ~ year + species_seeded +  log(avg_p_a) +
               (1|siteID), weedy_pi)
 anova(wp2, wp3)           # out!
 anova(wp3)
 
-# nix size
+# nix p-to-a ratio
 wp4 <- lmer(wp_pi_logit ~ year+species_seeded +
               (1|siteID), weedy_pi)
 anova(wp4)
@@ -456,6 +468,26 @@ anova(wp4)
 performance::check_model(wp4)
 performance::r2(wp4)
 rand(wp4)
+
+# adding some terms back to double check...too much noise for any trends/interactions 
+wp4b <- lmer(wp_pi_logit ~ year * species_seeded +
+               (1|siteID), weedy_pi) # interaction? naw...
+anova(wp4b)
+
+# age with interaction - naw
+wp4c <- lmer(wp_pi_logit ~ year * age_yrs + species_seeded +
+               (1|siteID), weedy_pi)
+anova(wp4c)
+
+# p:a rat with interaction - naw
+wp4d <- lmer(wp_pi_logit ~ year * log(avg_p_a) + species_seeded +
+               (1|siteID), weedy_pi)
+anova(wp4d)
+
+# size with interaction - naw...
+wp4e <- lmer(wp_pi_logit ~ year * log(hectares_in_strips) + species_seeded +
+               (1|siteID), weedy_pi)
+anova(wp4e)
 
 # ---- 6. Annual weeds ----
 plot_dat(weedy_pi, "wa_pi_logit")
@@ -498,13 +530,14 @@ wa4 <- lmer(wa_pi_logit ~ year + species_seeded +
 anova(wa4, wa3)            # keep!
 
 # final model is wa3
-summary(wa3)
+summary(wa3b)
+anova(wa3b)
 confint.merMod(wa3)
 
 # age slope = -0.36402
 exp(-0.36402)
 
-anova(wa3)
+summary(wa3)
 performance::check_model(wa3)
 performance::r2(wa3)
 rand(wa3)                  # site doesn't matter...
@@ -522,8 +555,8 @@ data("site_div_rich")
 pra_vs_wd <- left_join(site_div_rich, prairie_pi)
 
 df <- data.frame(year = c("2018", "2019"),
-                 ints = c(3.69586, 3.82647),
-                 slps = c(-1.28937, -1.28937))
+                 ints = c(3.73743, 3.85857),
+                 slps = c(-1.36014, -1.36014))
 
 pra_cov <- 
   ggplot(pra_vs_wd, aes(prairie_pi, w_rich))+
@@ -552,6 +585,30 @@ pra_cov <-
         plot.title = element_text(size = 15, family = "Fira Sans"))
 pra_cov
 
+pra_cov_log <- 
+  ggplot(pra_vs_wd, aes(prairie_pi, w_rich))+
+  geom_point(aes(fill = year), size = 3, pch = 21)+
+  geom_abline(data = df, aes( 
+    intercept = ints, slope = slps,
+    color = year), lty = 2, size = 1)+
+  geom_text(aes(0.75, 43), label = "R[m]^2 == 0.49", parse = TRUE)+
+  geom_text(aes(0.75, 39), label = "p[year] == 0.04", parse = TRUE)+
+  geom_text(aes(0.75, 36), label = "p[cov] < 0.001", parse = TRUE)+
+  labs(x = "Relative Cover",
+       y = "Weed Species Richness",
+       color = "Year sampled",
+       fill = "Year sampled")+
+  scale_color_grey(start = 0.3, end = 0.6)+
+  scale_fill_grey(start = 0.3, end = 0.6)+
+  scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
+  ggtitle("A. All Prairie")+
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
+pra_cov_log
+
 pw1 <- lmer(log(w_rich) ~ year + prairie_pi + (1|siteID), pra_vs_wd)
 pw2 <- lmer(log(w_rich) ~ year*prairie_pi + (1|siteID), pra_vs_wd)
 anova(pw1, pw2) # no interaction
@@ -563,8 +620,8 @@ performance::r2(pw1)
 # weedy richness vs prairie grass cov - SIG
 
 df2 <- data.frame(year = c("2018", "2019"),
-                  ints = c(3.16503, 3.31848),
-                  slps = c(-0.96636, -0.96636))
+                  ints = c( 3.20797, 3.20797+0.14252),
+                  slps = c(-1.09050, -1.09050))
 
 pg_cov <- 
   ggplot(pra_vs_wd, aes(pg_pi, w_rich))+
@@ -572,12 +629,9 @@ pg_cov <-
   geom_abline(data = df2, aes( 
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
-  geom_text(aes(0.6, 43), label = "R[m]^2 == 0.31", parse = TRUE,
-            family = "Fira Sans")+
-  geom_text(aes(0.6, 39), label = "p[year] == 0.02", parse = TRUE,
-            family = "Fira Sans")+
-  geom_text(aes(0.6, 36), label = "p[cov] == 0.002", parse = TRUE,
-            family = "Fira Sans")+
+  geom_text(aes(0.6, 43), label = "R[m]^2 == 0.32", parse = TRUE)+
+  geom_text(aes(0.6, 39), label = "p[year] == 0.03", parse = TRUE)+
+  geom_text(aes(0.6, 36), label = "p[cov] == 0.001", parse = TRUE)+
   labs(x = "Relative Cover",
        y = NULL,
        color = "Year sampled",
@@ -586,11 +640,11 @@ pg_cov <-
   scale_fill_grey(start = 0.3, end = 0.6)+
   scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
   ggtitle("B. Grasses")+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        plot.title = element_text(size = 15, family = "Fira Sans"))
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
 pg_cov
 
 gw1 <- lmer(log(w_rich) ~ year+pg_pi + (1|siteID), pra_vs_wd)
@@ -604,8 +658,8 @@ performance::check_model(gw1)
 # weedy richness vs prairie forb cov
 
 df3 <- data.frame(year = c("2018", "2019"),
-                  ints = c(2.81717, 3.34081),
-                  slps = c(0.06113, -1.00018))
+                  ints = c(2.85937, 2.85937+0.50972),
+                  slps = c(0.01535, -1.04573))
 
 pf_cov <- 
   ggplot(pra_vs_wd, aes(pf_pi, w_rich))+
@@ -614,12 +668,9 @@ pf_cov <-
           intercept = ints, slope = slps,
           color = year), lty = 2, size = 1)+
  # geom_smooth(aes(color  = year), method = "lm", se = FALSE, lty = 2)+
-  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.14", parse = TRUE,
-            family = "Fira Sans")+
-  geom_text(aes(0.45, 39), label = "p[year] == 0.002", parse = TRUE,
-            family = "Fira Sans")+
-  geom_text(aes(0.45, 36), label = "p[cov] == 0.29", parse = TRUE,
-            family = "Fira Sans")+
+  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.14", parse = TRUE)+
+  geom_text(aes(0.45, 39), label = "p[year] == 0.002", parse = TRUE)+
+  geom_text(aes(0.45, 36), label = "p[cov] == 0.25", parse = TRUE)+
   geom_text(aes(0.45, 33), label = "p[year*cov] == 0.02", parse = TRUE)+
   labs(x = "Relative Cover",
        y = NULL, color = "Year sampled",
@@ -628,14 +679,14 @@ pf_cov <-
   scale_fill_grey(start = 0.3, end = 0.6)+
   scale_y_continuous(trans = "log", limits = c(8, 45), breaks = c(15, 30, 45))+
   ggtitle("C. Forbs")+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        plot.title = element_text(size = 15, family = "Fira Sans"))
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
 pf_cov
 library(patchwork)
-pra_cov + pg_cov + pf_cov + plot_layout(guides = 'collect')
+pra_cov_log + pg_cov + pf_cov + plot_layout(guides = 'collect')
 
 fw1 <- lmer(log(w_rich) ~ year*pf_pi + (1|siteID), pra_vs_wd)
 summary(fw1)
@@ -647,8 +698,8 @@ performance::r2(fw1)
 wd_vs_pra <- left_join(site_div_rich, weedy_pi)
 
 df4 <- data.frame(year = c("2018", "2019"),
-                  ints = c(3.227344, 3.23229),
-                  slps = c(-0.495855, -0.495855))
+                  ints = c(3.24488, 3.24488 + 0.01373),
+                  slps = c(-0.58328, -0.58328))
 w_cov <- 
   ggplot(wd_vs_pra, aes(weed_pi, p_rich))+
   geom_point(aes(fill = year), size = 3, pch = 21)+
@@ -656,12 +707,9 @@ w_cov <-
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.7, 43), label = "R[m]^2 == 0.13", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.7, 39), label = "p[year] == 0.92", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.7, 36), label = "p[cov] == 0.04", parse = TRUE, 
-            family = "Fira Sans")+
+  geom_text(aes(0.7, 43), label = "R[m]^2 == 0.16", parse = TRUE)+
+  geom_text(aes(0.7, 39), label = "p[year] == 0.80", parse = TRUE)+
+  geom_text(aes(0.7, 36), label = "p[cov] == 0.02", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
@@ -670,11 +718,11 @@ w_cov <-
        y = "Prairie Species Richness", 
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        plot.title = element_text(size = 15, family = "Fira Sans"))
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
 w_cov
 wp1 <- lmer(log(p_rich) ~ year + weed_pi + (1|siteID), wd_vs_pra)
 summary(wp1)
@@ -685,8 +733,8 @@ performance::r2(wp1)
 # annual weed pi vs prairie richness - NS
 
 df5 <- data.frame(year = c("2018", "2019"),
-                  ints = c(3.10695, 3.10695-0.01489),
-                  slps = c(-0.35135, -0.35135))
+                  ints = c(3.08003, 3.0800-0.00972),
+                  slps = c(-0.31283, -0.31283))
 
 aw_cov <- 
   ggplot(wd_vs_pra, aes(wa_pi, p_rich))+
@@ -695,12 +743,9 @@ aw_cov <-
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.4, 43), label = "R[m]^2 == 0.02", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.4, 39), label = "p[year] == 0.76", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.4, 36), label = "p[cov] == 0.36", parse = TRUE, 
-            family = "Fira Sans")+
+  geom_text(aes(0.4, 43), label = "R[m]^2 == 0.01", parse = TRUE)+
+  geom_text(aes(0.4, 39), label = "p[year] == 0.85", parse = TRUE)+
+  geom_text(aes(0.4, 36), label = "p[cov] == 0.43", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
@@ -709,11 +754,11 @@ aw_cov <-
        y = NULL,
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        plot.title = element_text(size = 15, family = "Fira Sans"))
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
 aw_cov
 
 ap1 <- lmer(log(p_rich) ~ year + wa_pi + (1|siteID), wd_vs_pra)
@@ -724,8 +769,8 @@ performance::r2(ap1)
 
 # perennial weedy pi vs. prairie richness - nearly SIG
 df6 <- data.frame(year = c("2018", "2019"),
-                  ints = c(3.197928, 3.197928+0.008941),
-                  slps = c(-0.593589, -0.593589))
+                  ints = c(3.22157,  3.22157 + 0.01941),
+                  slps = c(-0.73328, -0.73328))
 
 pw_cov <- 
   ggplot(wd_vs_pra, aes(wp_pi, p_rich))+
@@ -734,12 +779,9 @@ pw_cov <-
     intercept = ints, slope = slps,
     color = year), lty = 2, size = 1)+
   #geom_smooth(method = "lm", se = FALSE, lty = 2, color = "black")+
-  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.11", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.45, 39), label = "p[year] == 0.86", parse = TRUE, 
-            family = "Fira Sans")+
-  geom_text(aes(0.45, 36), label = "p[cov] == 0.05", parse = TRUE, 
-            family = "Fira Sans")+
+  geom_text(aes(0.45, 43), label = "R[m]^2 == 0.15", parse = TRUE)+
+  geom_text(aes(0.45, 39), label = "p[year] == 0.72", parse = TRUE)+
+  geom_text(aes(0.45, 36), label = "p[cov] == 0.02", parse = TRUE)+
   scale_color_grey(start = 0.3, end = 0.6)+
   scale_fill_grey(start = 0.3, end = 0.6)+
   scale_y_continuous(trans = "log", limits = c(10, 45), breaks = c(15, 30, 45))+
@@ -748,11 +790,11 @@ pw_cov <-
        y = NULL,
        color = "Year sampled",
        fill = "Year sampled")+
-  theme(axis.text  = element_text(size = 12, family = "Fira Sans"),
-        axis.title = element_text(size = 14, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        plot.title = element_text(size = 15, family = "Fira Sans"))
+  theme(axis.text  = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 15))
 pw_cov
 
 pp1 <- lmer(log(p_rich) ~ year + wp_pi + (1|siteID), wd_vs_pra)
@@ -898,3 +940,50 @@ ggResidpanel::resid_panel(leg3)
 
 # yes, negative relationship between relative proportion of seed mix in legume seeds 
 # and the age of sites
+# ---- investigating relationship between size/edigness and C3 cover more ---------
+
+# recall model:
+c32 <- lmer(c3_pi_logit ~ year + species_seeded +
+              log(hectares_in_strips) + log(avg_p_a) + 
+              (1|siteID), prairie_pi)
+summary(c32)
+anova(c32)
+
+seed_div <- read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
+
+C3_seeds <- seed_div %>%
+  group_by(siteID) %>%
+  mutate(tot_PLS = sum (PLS_lbs_acre)) %>%
+  left_join(species_list, by = "speciesID") %>%
+  filter(group == "prairie C3 grass") %>%
+  mutate(tot_C3_pls = sum(PLS_lbs_acre),
+         prop_c3 = tot_C3_pls/tot_PLS,
+         num_spp = n()) %>%
+  select(siteID, tot_PLS, tot_C3_pls, prop_c3, num_spp) %>%
+  distinct() %>%
+  left_join(prairie_pi)
+
+# plotting & testing
+
+# 1. size - doesn't look very related...
+C3_seeds %>%
+  ggplot(aes(log(hectares_in_strips), car::logit(prop_c3)))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+C3_seeds %>%
+  ggplot(aes(log(hectares_in_strips), log(tot_C3_pls)))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+# 1. p-to-a ratio - again doesn't look very related
+
+C3_seeds %>%
+  ggplot(aes(log(avg_p_a), car::logit(prop_c3)))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+C3_seeds %>%
+  ggplot(aes(log(avg_p_a), log(tot_C3_pls)))+
+  geom_point()+
+  geom_smooth(method = "lm")

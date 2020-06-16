@@ -11,7 +11,8 @@ library(extrafont)
 sites <- c("ARM", "WOR", "MRS", "NYK", "SER", "RHO")
 data("site_div_rich")
 data("quad_div_rich")
-source("data-raw/00b_format_veg_cov_data.R")
+data("prairie_pi")
+data("weedy_pi")
 theme_set(theme_bw())
 grey_cols <- c("#373737", "#555555", "#D2D2D2")
 
@@ -59,7 +60,7 @@ sub_div_g %>%
   geom_col()
 
 #        size - NS
-b1 <- lm(beta_div ~ log(acres_in_strips), sub_div_g)
+b1 <- lm(beta_div ~ log(hectares_in_strips), sub_div_g)
 anova(b1)
 
 #        age - NS
@@ -106,7 +107,7 @@ sub_div_g %>%
   geom_col()
 
 #        size - NS
-p1 <- lm(log(p_rich) ~ log(acres_in_strips), sub_div_g)
+p1 <- lm(log(p_rich) ~ log(hectares_in_strips), sub_div_g)
 summary(p1)
 
 #        age - NS
@@ -163,7 +164,7 @@ sub_cov_p %>%
   geom_col()
 
 #         size - NS
-pp1 <- lm(prairie_pi_logit ~ log(acres_in_strips), sub_cov_p)
+pp1 <- lm(prairie_pi_logit ~ log(hectares_in_strips), sub_cov_p)
 summary(pp1)
 
 #         age - NS
@@ -212,7 +213,7 @@ sub_cov_p %>%
   geom_col()
 
 #          size - NS
-pf1 <- lm(pf_pi_logit ~ log(acres_in_strips), sub_cov_p)
+pf1 <- lm(pf_pi_logit ~ log(hectares_in_strips), sub_cov_p)
 summary(pf1)
 
 #          age - NS
@@ -238,7 +239,7 @@ sub_cov_w %>%
   geom_col()
 
 #         size - NS
-ww1 <- lm(weed_pi_logit ~ log(acres_in_strips), sub_cov_w)
+ww1 <- lm(weed_pi_logit ~ log(hectares_in_strips), sub_cov_w)
 summary(ww1)
 
 #         age - NS
@@ -290,7 +291,7 @@ summary(wp1)
 wp2 <- lm(wp_pi_logit ~ age_yrs, sub_cov_w)
 summary(wp2)
 
-#         season
+#         season - almost but not sig
 wp3 <- lm(wp_pi_logit ~ season_seeded, sub_cov_w)
 summary(wp3)
 anova(wp3)
@@ -453,17 +454,16 @@ plot_pf <-
   geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi,
                     ymax = avg_pf_pi + se_pf_pi),
                 width = 0.06, size = 1)+
-  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5,
-            family = "Fira Sans")+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pf), size = 5)+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 1.1))+
-  ggtitle("B. Forbs")+
+  ggtitle("C. Forbs")+
   guides(color = FALSE)+
   labs(x = NULL, 
        y = NULL) +
-  theme(axis.text.x = element_text(size = 14, family = "Fira Sans"),
+  theme(axis.text.x = element_text(size = 14),
         axis.text.y = element_blank(),
-        plot.title  = element_text(size = 18, family = "Fira Sans"))
+        plot.title  = element_text(size = 18))
 plot_pf
 plot_pg <- 
   ggplot(gg_pr_pi2, aes(season_seeded, avg_pg_pi))+
@@ -473,13 +473,13 @@ plot_pg <-
                 width = 0.06, size = 1)+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 1.1))+
-  ggtitle("C. Grasses")+
+  ggtitle("B. Grasses")+
   guides(color = FALSE)+
   labs(x = NULL, 
        y = NULL) +
-  theme(axis.text.x = element_text(size = 14, family = "Fira Sans"),
+  theme(axis.text.x = element_text(size = 14),
         axis.text.y = element_blank(),
-        plot.title  = element_text(size = 18, family = "Fira Sans"))
+        plot.title  = element_text(size = 18))
 plot_pg
 plot_pra <- 
   ggplot(gg_pr_pi2, aes(season_seeded, avg_pra_pi))+
@@ -487,20 +487,23 @@ plot_pra <-
   geom_errorbar(aes(ymin = avg_pra_pi - se_pra_pi,
                     ymax = avg_pra_pi + se_pra_pi),
                 width = 0.06, size = 1)+
-  geom_text(aes(season_seeded, y = 1, label = sig_level_pra), size = 5,
-            family = "Fira Sans")+
+  geom_text(aes(season_seeded, y = 1, label = sig_level_pra), size = 5)+
   scale_color_grey(start = 0.2, end = 0.7)+
   scale_y_continuous(limits = c(0, 1.1))+
   ggtitle("A. All Prairie Species")+
   guides(color = FALSE)+
   labs(x = NULL, 
        y = "Relative Cover") +
-  theme(axis.title.y = element_text(size = 18, family = "Fira Sans"),
-        axis.text    = element_text(size = 14, family = "Fira Sans"),
-        plot.title  = element_text(size = 18, family = "Fira Sans"))
+  theme(axis.title.y = element_text(size = 18),
+        axis.text    = element_text(size = 14),
+        plot.title  = element_text(size = 18))
 plot_pra
 library(patchwork)
-plot_pra + plot_pf + plot_pg
+season_plot <- plot_pra + plot_pg + plot_pf 
+
+ggsave("season_vs_relCov.png", plot = season_plot, dpi = 600, 
+       width= 9, height = 4.5)
+
 
 # weedy cover ---------------------------------------------------------
 

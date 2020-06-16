@@ -6,7 +6,7 @@ data("species_list")
 data("all_site_info")
 data("strips")
 
-# - caculating perimter area ratio of strips - #
+# - calculating perimter area ratio of strips - #
 pa_rat <- strips %>%
   mutate(perim_area = perimeter/area) %>%
   group_by(siteID) %>%
@@ -136,6 +136,7 @@ prairie_pi <-
          leg_pi_logit     = car::logit(leg_pi),
          nl_pi_logit      = car::logit(nl_pi)) %>%
   left_join(all_site_info)
+usethis::use_data(prairie_pi, overwrite = TRUE)
 
 weedy_pi <- 
   left_join(
@@ -157,4 +158,4 @@ weedy_pi <-
   mutate(wa_pi_logit   = car::logit(wa_pi),
          wp_pi_logit   = car::logit(wp_pi),
          weed_pi_logit = car::logit(weed_pi))
-
+usethis::use_data(weedy_pi, overwrite = TRUE)

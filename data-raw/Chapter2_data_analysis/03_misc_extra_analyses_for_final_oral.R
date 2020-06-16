@@ -6,6 +6,10 @@ library(extrafont)
 library(lmerTest)
 library(patchwork)
 theme_set(theme_bw())
+data("prairie_pi")
+data("weedy_pi")
+library(STRIPS2veg)
+data("all_site_info")
 
 # i. Evenness --------------------------------------------------------------
 
@@ -193,3 +197,247 @@ cover_r2 <-
         plot.title.position = "plot")
 
 (div_r2 + rich_r2)/cover_r2
+
+# iv. Exploring why sampling year matters... ----------------------------
+
+# sampling year significant for: all prairie species, C4 grasses, perennial weeds
+# why is prairie cover lower in 2019?
+
+expl_sub <- prairie_pi %>%
+  filter(!(siteID %in% c("ARM", "MCN", "RHO", "WHI", "WOR")))
+
+expl_sub_w <- weedy_pi %>%
+  filter(!(siteID %in% c("ARM", "MCN", "RHO", "WHI", "WOR")))
+
+# plot all and explore
+
+#1. All prairie spp - cover goes down in 2019
+mp <- lmer(prairie_pi_logit ~ year + species_seeded + (1|siteID), expl_sub)
+summary(mp)
+p1 <- expl_sub %>%
+  filter(!(is.na(species_seeded))) %>%
+  ggplot(aes(siteID, prairie_pi, fill  = year))+
+  geom_bar(stat = "identity", position = "dodge")+
+  ggtitle("Prairie Cover")
+p1
+
+# 1. C4 grasses - cover goes down in 2019 
+g1 <- lmer(c4_pi_logit ~ year + species_seeded + (1|siteID), expl_sub)
+summary(g1)
+
+p2 <- expl_sub %>%
+  filter(!(is.na(species_seeded))) %>%
+  ggplot(aes(siteID, c4_pi, fill  = year))+
+  geom_bar(stat = "identity", position = "dodge")+
+  ggtitle("C4 grass cover")
+
+# which grass cover goes down?? 
+veg_site %>%
+  filter(stringr::str_detect(group, "^prairie C4") & life_cycle == "perennial") %>%
+  group_by(speciesID) %>%
+  summarize(tot_cov = sum(cov)) %>%
+  arrange(desc(tot_cov))
+
+tcs <- veg_site %>%
+  select(year, siteID, total_cover) %>%
+  distinct()
+
+grass_expl <- veg_mid %>%
+  select(year, siteID, andge, sornu, panvi, schsc, boucu) %>%
+  group_by(siteID, year) %>%
+  summarize_all(~sum(.)) %>%
+  left_join(tcs, by = c("siteID", "year")) %>%
+  mutate_at(vars(andge:boucu), ~./total_cover) %>%
+  mutate_at(vars(andge:boucu), ~ if_else(. == 0,0.0001 , .)) %>%
+  left_join(all_site_info)
+
+# andge - doesn't appear to be this...
+a1 <- lmer(car::logit(andge) ~ year + species_seeded + (1|siteID), grass_expl)
+summary(a1)
+ggResidpanel::resid_panel(a1)
+performance::r2(a1)
+
+# sornu - goes down in 2019 
+s1 <- lmer(car::logit(sornu) ~ year + species_seeded + (1|siteID), grass_expl)
+summary(s1)
+ggResidpanel::resid_panel(s1)
+performance::r2(s1)
+
+# panvi - nope
+pv1 <- lmer(car::logit(panvi) ~ year + species_seeded + (1|siteID), grass_expl)
+summary(pv1)
+ggResidpanel::resid_panel(pv1)
+performance::r2(pv1)
+
+# schsc - nope
+sc1 <- lmer(car::logit(schsc) ~ year + species_seeded + (1|siteID), grass_expl)
+summary(sc1)
+ggResidpanel::resid_panel(sc1)
+performance::r2(sc1)
+
+# boucu - goes down 
+bc1 <- lmer(car::logit(boucu) ~ year + species_seeded + (1|siteID), grass_expl)
+summary(bc1)
+ggResidpanel::resid_panel(bc1)
+performance::r2(bc1)
+
+grass_expl %>%
+  ggplot(aes(year, car::logit(boucu)))+
+  geom_boxplot()+
+  geom_point()
+
+# 3. perennial weed cover goes up in 2019 - could this be due to certain spp becoming more abundant?
+p3 <- expl_sub_w %>%
+  filter(!(is.na(species_seeded))) %>%
+  ggplot(aes(siteID, wp_pi_logit, fill  = year))+
+  geom_bar(stat = "identity", position = "dodge")+
+  ggtitle("Perennial Weed cover")
+p3 # largely due SLO, POW, MUG, ISB, GES
+e1 <- lmer(wp_pi_logit ~ year+species_seeded +
+             (1|siteID), expl_sub_w)
+summary(e1)
+anova(e1)      # similar p-value when we subset dataframe
+
+# explore which species that is...
+
+# highest abundant perennial weedy spp OVERAll
+data("veg_site")
+data("veg_mid")
+veg_site %>%
+  filter(stringr::str_detect(group, "^weedy") & life_cycle == "perennial") %>%
+  group_by(speciesID) %>%
+  summarize(tot_cov = sum(cov)) %>%
+  arrange(desc(tot_cov))
+
+tcs <- veg_site %>%
+  select(year, siteID, total_cover) %>%
+  distinct()
+
+weeds_expl <- veg_mid %>%
+  select(year, siteID, broin, cirar, poapr, tarof, phaar) %>%
+  group_by(siteID, year) %>%
+  summarize_all(~sum(.)) %>%
+  left_join(tcs, by = c("siteID", "year")) %>%
+  mutate_at(vars(broin:phaar), ~./total_cover) %>%
+  mutate_at(vars(broin:phaar), ~ if_else(. == 0,0.0001 , .)) %>%
+  left_join(all_site_info) 
+
+# broin - significantly increased with year
+b1 <- lmer(broin ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(b1)
+b2 <- lmer(car::logit(broin) ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(b2)
+performance::r2(b2)
+ggResidpanel::resid_compare(list(b1, b2)) # b1 looks better although there is no transformation
+performance::compare_performance(b1, b2)
+
+# cirar - less evidence that this is driving pattern
+c1 <- lmer(cirar ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(c1)
+c2 <- lmer(car::logit(cirar) ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(c2)
+performance::r2(c2)
+ggResidpanel::resid_panel(c1)
+
+# poapr - no...
+p1 <- lmer(poapr ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(p1)
+p2 <- lmer(car::logit(poapr) ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(p2)
+performance::r2(p2)
+ggResidpanel::resid_panel(p2)
+
+# tarof - no....
+t1 <- lmer(tarof ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(t1)
+t2 <- lmer(car::logit(tarof) ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(t2)
+performance::r2(t2)
+ggResidpanel::resid_panel(t2)
+
+# phaar - 
+ph1 <- lmer(phaar ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(ph1)
+ph2 <- lmer(car::logit(phaar) ~ year + species_seeded + (1|siteID), weeds_expl)
+summary(ph2)
+performance::r2(ph2)
+ggResidpanel::resid_panel(ph2)
+
+# so perhaps brome is increasing, but also only signifcant when data is untransformed...meh
+
+
+# v. Exploring why changin PHAAR from native to exotic matters... -----------
+data("veg_site")
+
+veg_site %>%
+  filter(siteID != "WAT") %>%
+  filter(speciesID == "phaar") %>%
+  arrange(siteID, year)
+
+# vi. Making figure for supplementary material, all seasons relative cover of prairie spp -----
+
+data("prairie_pi")
+
+season_plot <- prairie_pi %>%
+  filter(year == "2019") %>%
+  group_by(season_seeded) %>%
+  summarize(n              = n(),
+            avg_prairie_pi = mean(prairie_pi),
+            se_prairie_pi  = sd(prairie_pi)/sqrt(n),
+            avg_pg_pi      = mean(pg_pi),
+            se_pg_pi       = sd(pg_pi)/sqrt(n),
+            avg_pf_pi      = mean(pf_pi),
+            se_pf_pi       = sd(pf_pi)/sqrt(n)) %>%
+  mutate(season_seeded = recode(season_seeded, "fall-winter" = "fall"),
+         season_seeded = stringr::str_to_title(season_seeded))
+
+p1 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_prairie_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_prairie_pi - se_prairie_pi, 
+                    ymax = avg_prairie_pi + se_prairie_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("A. Prairie")+
+  labs(x = NULL, 
+       y = "Relative Cover")+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p1
+p2 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_pf_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi, 
+                    ymax = avg_pf_pi + se_pf_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("B. Forbs")+
+  labs(x = NULL, 
+       y = NULL)+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p2
+p3 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_pg_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pg_pi - se_pg_pi, 
+                    ymax = avg_pg_pi + se_pg_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("C. Grasses")+
+  labs(x = NULL, 
+       y = NULL)+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p3
+
+p1 + p2 + p3

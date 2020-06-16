@@ -4,10 +4,11 @@ library(STRIPS2veg)
 library(ggResidpanel)
 library(performance)
 library(extrafont)
+library(emmeans)
 data("all_site_info")
 data("site_div_rich")
 
-# 1.  ------ checking VIF of variables -----------------
+# 1.  ------ checking VIF/association of variables -----------------
 
 dummy_var <- sample(1:100, 26)
 
@@ -18,6 +19,38 @@ c1 <- lm(dummy_var ~ species_seeded + age_yrs + log(hectares_in_strips) + avg_p_
 summary(c1)
 car::Anova(c1, type = "II")
 car::vif(c1)
+
+# relationship between age and species seeded: 
+
+s18 <- lm(species_seeded ~ age_yrs, site_div_rich %>% filter(year == "2018"))
+summary(s18)
+
+s19 <- lm(species_seeded ~ age_yrs, site_div_rich %>% filter(year == "2019"))
+summary(s19)
+
+site_div_rich %>%
+  ggplot(aes(age_yrs, species_seeded))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~year)
+
+# weak-ish but still associated! 
+
+# other graphs:
+
+# age vs edginess - meh
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(age_yrs, log(avg_p_a)))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+# size vs species seeded - meh 
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, log(hectares_in_strips)))+
+  geom_point()+
+  geom_smooth(method = "lm")
 
 # 2A. ------ Gamma diversity models --------------------
 data("site_div_rich")
@@ -55,12 +88,20 @@ anova(g3, g4)  # keep!
 # final model = g3
 resid_panel(g3)
 summary(g3)
-confint.merMod(g3) 
 # checking model...
 performance::r2(g3)
 performance::check_model(g3)
 performance::model_performance(g3)
 rand(g3)   # random effect matters
+
+cis <- confint.merMod(g3) %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "variable")
+
+tab <- as.data.frame(coef(summary(g3))) %>%
+  tibble::rownames_to_column(var = "variable") %>%
+  left_join(., cis) %>%
+  tidyr::unite(col = "CIs", `2.5 %`, `97.5 %`, sep = ",")
 
   # slopes = 0.371 (species seeded) and 2.58 (log(hectares_in_strips))
 2.58710*log(2) # change in diveristy when area in doubled
@@ -331,15 +372,18 @@ anova(p2)
 # p2 is the final model 
 summary(p2)
 confint.merMod(p2)
-exp(0.016765)   
-exp(0.016765*5)
+exp(0.017500)   
+exp(0.017500*5)
 # slope for species_seeded
-(exp(0.016765)-1)*100         # percent increase
+(exp(0.017500)-1)*100         # percent increase
 confint.merMod(p2) %>% exp()  # CI for percent increase
+# CI for species_seeded
+(exp(0.009461599)-1)*100         
+(exp(0.02556925)-1)*100 
 
-2^0.080320                    # slope for size (multiplicative for doubling size)
-2^0.011177323
-2^0.14949540
+2^0.078368                   # slope for size (multiplicative for doubling size)
+2^0.006143397
+2^0.15059912
 
 anova(p2)
 performance::check_model(p2)
@@ -401,14 +445,14 @@ w1 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
 anova(w_log, w1)    # out!
 anova(w1)
 
-# nix season
+# nix p_a ratio
 w2 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
-             log(avg_p_a) +
+             season_seeded +
              (1|siteID), site_div_rich)
 anova(w2, w1)       # out!
 anova(w2)
 
-# nix p_a ratio
+# nix season
 w3 <- lmer(log_w_rich ~ year + species_seeded + log(hectares_in_strips) +
              (1|siteID), site_div_rich)
 anova(w3, w2)    # out!
@@ -449,6 +493,7 @@ site_div_rich %>%
         legend.text = element_text(size = 12, family = "Fira Sans"))
 
 # 4A. ------ Alpha prairie richness ----------
+data("quad_div_rich")
 quad_div_rich <- 
   quad_div_rich %>%
   mutate(p_rich     = replace(p_rich, p_rich == 0, 0.001),
@@ -463,49 +508,58 @@ summary(ap_all)
 anova(ap_all)
 resid_panel(ap_all)
 
-# nix p_a ratio
+# nix size
 
-ap0 <- lmer(p_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
+ap0 <- lmer(p_rich ~ year + species_seeded + age_yrs +  log(avg_p_a) +
               season_seeded +
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(ap0, ap_all)     # out! 
 anova(ap0)
 
-# nix area
-ap1 <- lmer(p_rich ~ year + species_seeded + age_yrs + season_seeded +
+# nix ap ratio
+ap1 <- lmer(p_rich ~ year + species_seeded + age_yrs +  season_seeded +
               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
 anova(ap1, ap_all)     # out!
-
-# nix season 
-ap2 <- lmer(p_rich ~ year + species_seeded + age_yrs +
-              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)        # model failed to converge?
-anova(ap1, ap2) # idk how this still works, but out!
+anova(ap1)
 
 # nix age
-ap3 <- lmer(p_rich ~ year + species_seeded +
-              (1|quadratID:siteID) + (1|siteID), quad_div_rich)
-anova(ap3, ap2) # keep age...
+ap2 <- lmer(p_rich ~ year + species_seeded + season_seeded +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)        # model failed to converge?
+anova(ap1, ap2) # idk how this still works, but out!
 anova(ap2)
 
-# model ap2 is the model, but it doesn't converge?
-performance::check_convergence(ap2)           # this says it did converge so...
+# nix season
+ap3 <- lmer(p_rich ~ year + species_seeded +
+              (1|quadratID:siteID) + (1|siteID), quad_div_rich)
+anova(ap3, ap2) # keep season
+anova(ap2)
+summary(ap2)
+
+ap2_m <- emmeans(ap2, ~ season_seeded)
+pairs(ap2_m)
+contrast(ap2_m)
+
 performance::r2(ap2)
 summary(ap2)
 confint.merMod(ap2)
 anova(ap2)
 rand(ap2)   # both random effects matter
-performance::check_model(ap2)                 # idk some of these plots look weird but I'm going with it
-
+performance::check_model(ap2)                 
 
 # just checking poisson and log-transformed - sticking with assumptions of normality and not-transforming
-ap2_log <- lmer(log_p_rich ~ year + species_seeded + age_yrs +
+ap2_log <- lmer(log_p_rich ~ year + species_seeded + season_seeded +
                   (1|quadratID:siteID) + (1|siteID), quad_div_rich)
 performance::check_model(ap2_log)                 # lower AIC but looks terrible, keeping with normal
+
 ap2_poi <- glmer(p_rich ~ year + species_seeded + age_yrs +
                    (1|quadratID:siteID) + (1|siteID), quad_div_rich,
                  family = poisson)
 performance::check_overdispersion(ap2_poi)        # poisson is ok
 performance::compare_performance(ap2, ap2_log, ap2_poi)
+
+# plot? 
+
+
 
 # 4B. ------ Alpha weedy richness -----------
 

@@ -89,11 +89,11 @@ sometimes_forb <- found_missing %>%
 
 p1 <- sometimes_forb %>%
   ggplot(aes(proportion_found*100, reorder(full_name, proportion_found)))+
-  geom_point(aes(size = timesSeeded, fill = str_wrap(fam_simp,15)), 
+  geom_point(aes(size = timesSeeded, fill = stringr::str_wrap(fam_simp,15)), 
              color = "black", pch = 21, stroke = 1.23)+
   geom_segment(aes(x = 0, xend = proportion_found*100, 
                    y = full_name, yend = full_name), linetype = "longdash")+
-  geom_point(aes(size = timesSeeded, fill = str_wrap(fam_simp,15)), 
+  geom_point(aes(size = timesSeeded, fill = stringr::str_wrap(fam_simp,15)), 
              color = "black", pch = 21, stroke = 1.23)+
   geom_vline(xintercept = 50, linetype = "dotted", size = 1)+
   scale_fill_manual(values = c(my_cols[1], my_cols[3]))+
@@ -150,7 +150,11 @@ p2
 library(patchwork)
 p1 + p2
 
-always %>%
+sometimes_p <- p1 + p2
+ggsave("sometimes_detected.png", plot = sometimes_p, dpi = 600, width = 10, height = 8)
+
+
+always_p <- always %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
              fill = stringr::str_wrap(group_simple2,15)))+
   geom_bar(aes(color = group_simple2),
@@ -177,7 +181,9 @@ always %>%
         plot.title   = element_text(size = rel(1.3), hjust = 0.5, face= "bold", 
                                     family = "Fira Sans"))
 
-never %>%
+ggsave(filename = "always_detected.png", always_p, dpi = 600, width = 7, height = 5)
+
+never_p <- never %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
              color = group_simple2, fill = stringr::str_wrap(group_simple2,15)))+
   geom_bar(stat = "identity", size = 1)+
@@ -209,6 +215,8 @@ never %>%
         plot.title  = element_text(size = rel(1.3), hjust = 0.5, face= "bold"),
         legend.text = element_text(size = 12, family = "Fira Sans"),
         legend.title = element_text(size = 14, family = "Fira Sans"))
+
+ggsave("never_detected.png", never_p, dpi = 600, width = 6, height = 8)
 
 # as an aside, how many praire species did we find ....
 
