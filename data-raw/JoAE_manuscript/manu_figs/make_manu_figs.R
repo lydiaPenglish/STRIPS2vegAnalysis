@@ -5,6 +5,10 @@ library(ggplot2)
 library(STRIPS2veg)
 library(gt)
 library(lmerTest)
+library(patchwork)
+theme_set(theme_bw())
+
+# NB: this script doesn't include ALL figures
 
 # Figure 1 - map and table ------------------------------------------
 # NB: cannot make map in public repo bc it uses centroids, but will make 
@@ -85,7 +89,7 @@ gtsave(table1, filename = "site_info.png", path = "data-raw/JoAE_manuscript/manu
 
         
 # 
-# Figure 2 - Diversity Table -------------------------------------------------------------
+# Table 1 - Diversity Table -------------------------------------------------------------
 
 # Attempting to make this table in gt
 data("site_div_rich")
@@ -219,3 +223,127 @@ table2 <- div_tab %>%
 table2
 
 gtsave(table2, filename = "tab2_div_models.png")
+
+# Figure S6 - season vs relative cover of prairie species across all sites ----------
+
+data("prairie_pi")
+
+season_plot <- prairie_pi %>%
+  filter(year == "2019") %>%
+  group_by(season_seeded) %>%
+  summarize(n              = n(),
+            avg_prairie_pi = mean(prairie_pi),
+            se_prairie_pi  = sd(prairie_pi)/sqrt(n),
+            avg_pg_pi      = mean(pg_pi),
+            se_pg_pi       = sd(pg_pi)/sqrt(n),
+            avg_pf_pi      = mean(pf_pi),
+            se_pf_pi       = sd(pf_pi)/sqrt(n)) %>%
+  mutate(season_seeded = recode(season_seeded, "fall-winter" = "fall"),
+         season_seeded = stringr::str_to_title(season_seeded))
+
+p1 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_prairie_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_prairie_pi - se_prairie_pi, 
+                    ymax = avg_prairie_pi + se_prairie_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("A. Prairie")+
+  labs(x = NULL, 
+       y = "Relative Cover")+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p1
+p2 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_pf_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pf_pi - se_pf_pi, 
+                    ymax = avg_pf_pi + se_pf_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("C. Forbs")+
+  labs(x = NULL, 
+       y = NULL)+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p2
+p3 <- season_plot %>%
+  ggplot(aes(season_seeded, avg_pg_pi))+
+  geom_bar(aes(color = season_seeded), stat = "identity", fill = "white", size = 2)+
+  geom_errorbar(aes(ymin = avg_pg_pi - se_pg_pi, 
+                    ymax = avg_pg_pi + se_pg_pi),
+                width = 0.05, size = 1)+
+  scale_color_grey(start = 0.2, end = 0.7)+
+  scale_y_continuous(limits = c(0, 0.8))+
+  guides(color = FALSE)+
+  ggtitle("B. Grasses")+
+  labs(x = NULL, 
+       y = NULL)+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 15))
+p3
+
+season_vs_relcov <- p1 + p3 + p2
+
+ggsave("season_vs_relCov_all.png", plot = season_vs_relcov, dpi = 600, 
+       width= 9, height = 4.5)
+
+# Figure S7 - prairie vs weedy species cover
+data("veg_mid")
+nat_codes <- species_list %>% # 5 letter codes for weedy species
+  filter(stringr::str_detect(group, "^prairie")) %>%
+  select(speciesID) %>%
+  unlist()
+weeds <- species_list %>% # 5 letter codes for weedy species
+  filter(stringr::str_detect(group, "^weedy")) %>%
+  select(speciesID) %>%
+  unlist()
+
+p_cov <- veg_mid %>%
+  select(year, siteID, one_of(nat_codes)) %>%
+  mutate(p_cov = rowSums(.[, 3:ncol(.)])) %>%
+  group_by(year, siteID) %>%
+  summarize(avg_p_cov = mean(p_cov))
+
+w_cov <- veg_mid %>%
+  select(year, siteID, one_of(weeds)) %>%
+  mutate(w_cov = rowSums(.[, 3:ncol(.)])) %>%
+  group_by(year, siteID) %>%
+  summarize(avg_w_cov = mean(w_cov))
+
+veg_cov <- full_join(p_cov, w_cov)
+
+
+# model
+l1 <- lmerTest::lmer(avg_p_cov ~ year+avg_w_cov + (1|siteID), veg_cov)
+summary(l1)
+ggResidpanel::resid_panel(l1)
+performance::r2(l1)
+lmerTest::rand(l1)   # site doesn't explain much variation
+
+# plot
+slps <- data.frame(year = c("2018", "2019"),
+                   ints = c(114.18585, (114.18585 - 1.40410)),
+                   slps = c(-0.66562, -0.66562))
+
+veg_cov %>%
+  ggplot(aes(avg_w_cov, avg_p_cov)) +
+  geom_point(size = 2)+
+  facet_wrap(~year)+
+  geom_abline(data = slps, aes(slope = slps, intercept = ints),
+              lty = 2)+
+  labs(x = "Average weedy cover \nper quadrat",
+       y = "Average prairie cover \nper quadrat")+
+  theme(strip.background = element_rect(fill = "white"),
+        strip.text = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15))
+
+ggsave("pr_vs_wd_cov.png", dpi = 600, width = 7, height = 5.5)
