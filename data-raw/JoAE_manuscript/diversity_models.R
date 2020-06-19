@@ -259,7 +259,7 @@ quad_div_rich %>%
         legend.text = element_text(size = 12))
 
 # Gamma prairie richness ------------------------------------------------------
-# Richness of the prairie community at the site-level
+# aka Richness of the prairie community at the site-level
 hist(site_div_rich$p_rich)
 
 p_all <- lmer(p_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
@@ -287,7 +287,6 @@ performance::check_overdispersion(p_poi)    # not overdispersed
 
 # going to go ahead with log-transformed count data to keep things normal
 
-
 anova(p_log)
 # nix p a ratio
 
@@ -297,14 +296,14 @@ p0 <- lmer(log(p_rich) ~ year + species_seeded + log(hectares_in_strips) + age_y
 anova(p0, p_log)    # out!
 anova(p0)
 
-# nix age
+# nix season
 p1 <- lmer(log(p_rich) ~ year + species_seeded + log(hectares_in_strips) + 
-             season_seeded +
+             age_yrs +
              (1|siteID), site_div_rich)
 anova(p0, p1) # out!
 anova(p1)
 
-# nix season
+# nix age
 p2 <- lmer(log(p_rich) ~ year + species_seeded + log(hectares_in_strips) + 
              (1|siteID), site_div_rich)
 anova(p1, p2) # out!
@@ -314,29 +313,31 @@ anova(p2)
 summary(p2)
 confint.merMod(p2)
 exp(0.017500)   
-exp(0.017500*5)
 # slope for species_seeded
 (exp(0.017500)-1)*100         # percent increase
-confint.merMod(p2) %>% exp()  # CI for percent increase
 # CI for species_seeded
 (exp(0.009461599)-1)*100         
 (exp(0.02556925)-1)*100 
 
 2^0.078368                   # slope for size (multiplicative for doubling size)
-2^0.006143397
+2^0.006143397                # CI for size (multiplicative for doubling size)
 2^0.15059912
 
-anova(p2)
-performance::check_model(p2)
+resid_panel(p2)
 performance::r2(p2)
 rand(p2)
 
-x2s = c(-.7,0.4,1.61)
+# making plot
+xs = c(-.7,0.4,1.61)
 # equivalent to 0.5 hectares, 1.5 hectares, and 5 hectares
-2.478392 + 0.080320*x2s[2]
+int <- 2.480545 - 0.044179
 
-slopes <- data.frame(int = c(2.422168, 2.51052, 2.607707),
-                     sl  = c(0.016765, 0.016765, 0.016765),
+int + 0.078368 *xs[1]
+int + 0.078368 *xs[2]
+int + 0.078368 *xs[3]
+
+slopes <- data.frame(int = c(2.381508, 2.467713, 2.562538),
+                     sl  = c(0.017500,  0.017500, 0.017500 ),
                      id  = c("0.5 ha", "1.5 ha", "5 ha"))
 
 site_div_rich %>%
@@ -354,3 +355,182 @@ site_div_rich %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14),
         legend.text = element_text(size = 12))
+
+# Gamma weedy richness -----------------------------------------------------
+# aka site level richness of the weeds
+
+hist(site_div_rich$w_rich)
+w_all <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                age_yrs + 
+                season_seeded +
+                (1|siteID), site_div_rich)
+summary(w_all)
+resid_panel(w_all)
+
+w_poi <- glmer(w_rich ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                 age_yrs + 
+                 season_seeded +
+                 (1|siteID), site_div_rich, family = poisson)        # model doesn't converge....grr
+performance::check_convergence(w_poi)   # idk this says it's ok? 
+
+w_log <- lmer(log(w_rich) ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                age_yrs + 
+                season_seeded +
+                (1|siteID), site_div_rich)
+resid_panel(w_log)
+resid_compare(list(w_all, w_log))              # Hmm log transform might be a little worse? 
+
+# still going forward with log
+anova(w_log)
+# nix age
+w1 <- lmer(log(w_rich) ~ year + species_seeded + log(hectares_in_strips) +
+             log(avg_p_a) +
+             season_seeded +
+             (1|siteID), site_div_rich)
+anova(w_log, w1)    # out!
+anova(w1)
+
+# nix p_a ratio
+w2 <- lmer(log(w_rich) ~ year + species_seeded + log(hectares_in_strips) +
+             season_seeded +
+             (1|siteID), site_div_rich)
+anova(w2, w1)       # out!
+anova(w2)
+
+# nix season
+w3 <- lmer(log(w_rich) ~ year + species_seeded + log(hectares_in_strips) +
+             (1|siteID), site_div_rich)
+anova(w3, w2)    # out!
+anova(w3)
+
+# nix size
+w4 <- lmer(log(w_rich) ~ year + species_seeded + 
+             (1|siteID), site_div_rich)
+anova(w3, w4)       # out!
+
+# w4 is the final model
+anova(w4)
+summary(w4)                                    # NS trend that weed richness increases with seed mix richness
+confint.merMod(w4)
+performance::compare_performance(w_log, w1, w2, w3, w4)  # yup w4 is the best
+performance::r2(w4)                                  # woof fixed effects explain little variation
+resid_panel(w4)
+rand(w4)
+
+# plot
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, w_rich))+
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(intercept = 2.498264, slope = 0.012534,
+              size = 1.5)+
+  #scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+  #                  guide = guide_legend(reverse = TRUE))+
+  scale_y_continuous(trans = "log", breaks = c(10, 20, 30), limits = c(10, 40))+
+  labs(color = NULL,
+       x = "Seed mix richness", 
+       y = "Weedy species richness")+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+# Alpha prairie richness -------------------------------------------
+# species richness of prairie species at the quadrat level
+
+ap_all <- lmer(p_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + log(avg_p_a) +
+                 season_seeded +
+                 (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+summary(ap_all)
+anova(ap_all)
+resid_panel(ap_all)
+
+# nix size
+
+ap0 <- lmer(p_rich ~ year + species_seeded + age_yrs +  log(avg_p_a) +
+              season_seeded +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(ap0, ap_all)     # out! 
+anova(ap0)
+
+# nix ap ratio
+ap1 <- lmer(p_rich ~ year + species_seeded + age_yrs +  season_seeded +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(ap1, ap_all)     # out!
+anova(ap1)
+
+# nix age
+ap2 <- lmer(p_rich ~ year + species_seeded + season_seeded +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)        # model failed to converge?
+anova(ap1, ap2) # idk how this still works, but out!
+anova(ap2)
+
+# nix season
+ap3 <- lmer(p_rich ~ year + species_seeded +
+              (1|quadratID:siteID) + (1|siteID), quad_div_rich)
+anova(ap3, ap2) # keep season
+anova(ap2)
+summary(ap2)
+
+ap2_m <- emmeans(ap2, ~ season_seeded)
+pairs(ap2_m)
+contrast(ap2_m)
+
+performance::r2(ap2)
+summary(ap2)
+confint.merMod(ap2)
+anova(ap2)
+rand(ap2)   # both random effects matter
+resid_panel(ap2)            
+
+# fitting glmer too
+ap2_poi <- glmer(p_rich ~ year + species_seeded + age_yrs +
+                   (1|quadratID:siteID) + (1|siteID), quad_div_rich,
+                 family = poisson)    
+performance::check_convergence(ap2_poi)           # says its ok
+performance::check_overdispersion(ap2_poi)        # poisson is ok
+performance::compare_performance(ap2, ap2_poi)
+summary(ap2_poi)
+
+# Alpha weedy richness -----------------------------------------------
+# aka species richness of the weed on the quadrat scale
+
+wp_all <- lmer(w_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
+                 log(avg_p_a) +
+                 season_seeded +
+                 (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+resid_panel(wp_all)
+anova(wp_all) # welp nothing signicant but will still go through stepwise
+
+# nix p_a ratio
+wp0 <- lmer(w_rich ~ year + species_seeded + age_yrs + log(hectares_in_strips) + 
+              season_seeded +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(wp0, wp_all)    # out! 
+anova(wp0)
+
+# nix age 
+wp1 <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) +
+              season_seeded + 
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(wp1, wp0)  # out
+anova(wp1)
+
+# nix season
+wp2 <- lmer(w_rich ~ year + species_seeded + log(hectares_in_strips) +
+              (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(wp2, wp1) # out!
+anova(wp2)
+
+# nix size 
+wp3 <-  lmer(w_rich ~ year + species_seeded + 
+               (1|quadratID:siteID) + (1|siteID), data = quad_div_rich)
+anova(wp3, wp2)  # out
+
+# wp3 is the final model
+anova(wp3)
+summary(wp3)
+confint.merMod(wp3)
+rand(wp3)        # both random effects matter
+
+resid_panel(wp3)
+performance::r2(wp3)     # ha, fixed effects explain very little...
