@@ -24,7 +24,6 @@ data("weedy_pi")            #  created in "00b_format_veg_cov_data.R"
 
 # function to plot all the predictor variables against the response to spot any 
 # interactions/trends
-
 plot_dat <- function(dat, yy){
   zz <- dat %>%
     select(year, all_of(yy), species_seeded, age_yrs, hectares_in_strips, 
@@ -576,7 +575,7 @@ performance::check_overdispersion(legp1)
 # 2. relationship between age and relative amount of seed mix devoted to legumes
 # (only a subset of sites)
 
-seed_div <- read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
+seed_div <- readr::read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
 
 leg_PLS_pi <- seed_div %>%
   group_by(siteID) %>%
@@ -634,7 +633,7 @@ c32 <- lmer(c3_pi_logit ~ year + species_seeded +
 summary(c32)
 anova(c32)
 
-seed_div <- read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
+seed_div <- readr::read_csv("data-raw/seed_mix_info/all_site_seed_div.csv")
 
 C3_seeds <- seed_div %>%
   group_by(siteID) %>%
