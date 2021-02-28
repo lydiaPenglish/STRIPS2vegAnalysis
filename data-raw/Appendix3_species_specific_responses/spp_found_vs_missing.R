@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(STRIPS2veg)
 library(extrafont)
+library(ggpubr)
 data("species_list")
 data("veg_site")
 data("extra_spp")
@@ -107,14 +108,14 @@ p1 <- sometimes_forb %>%
          size = guide_legend(order = 0))+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
-        legend.text = element_text(family = "Fira Sans"),
-        legend.title = element_text(family = "Fira Sans"),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 13),
         legend.position = "bottom",
         legend.direction = "vertical",
-        axis.text.x = element_text(size = rel(1.1), family = "Fira Sans"),
-        axis.text.y = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
-        axis.title  = element_text(size = rel(1.15), family = "Fira Sans"),
-        plot.title  = element_text(size = rel(1.3), face= "bold", family = "Fira Sans"),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12, face = "italic"),
+        axis.title  = element_text(size = 13),
+        plot.title  = element_text(size = 14, face= "bold"),
         plot.title.position = "plot")
 p1
 p2 <- sometimes_grass %>%
@@ -126,7 +127,7 @@ p2 <- sometimes_grass %>%
   geom_point(aes(fill = group_simple, size = timesSeeded), 
              color = "black", pch = 21, stroke = 1.23)+
   geom_vline(xintercept = 50, linetype = "dotted", size = 1)+
-  scale_fill_manual(values = my_cols[6:8])+
+  scale_fill_manual(values = c(my_cols[7], my_cols[8], my_cols[6]))+
   labs(y = NULL,
        x = "Percent detection (%)",
        size = "Times Seeded",
@@ -137,21 +138,22 @@ p2 <- sometimes_grass %>%
          size = guide_legend(order = 0))+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
-        legend.text = element_text(family = "Fira Sans"),
-        legend.title = element_text(family = "Fira Sans"),
         legend.position = "bottom",
         legend.direction = "vertical",
-        axis.text.x = element_text(size = rel(1.1), family = "Fira Sans"),
-        axis.text.y = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
-        axis.title  = element_text(size = rel(1.15), family = "Fira Sans"),
-        plot.title  = element_text(size = rel(1.3), face= "bold", family = "Fira Sans"),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12, face = "italic"),
+        axis.title  = element_text(size = 13),
+        plot.title  = element_text(size = 14, face= "bold"),
         plot.title.position = "plot")
 p2
 library(patchwork)
 p1 + p2
 
 sometimes_p <- p1 + p2
-ggsave("sometimes_detected.png", plot = sometimes_p, dpi = 600, width = 10, height = 8)
+sometimes_p
+ggsave("sometimes_detected.png", plot = sometimes_p, dpi = 600, width = 15, height = 10)
 
 
 always_p <- always %>%
@@ -159,29 +161,30 @@ always_p <- always %>%
              fill = stringr::str_wrap(group_simple2,15)))+
   geom_bar(aes(color = group_simple2),
            stat = "identity", size = 1)+
-  geom_hline(yintercept = 5, lty = 2)+
+  geom_vline(xintercept = 22.5, lty = 2)+
   coord_flip()+
-  scale_color_manual(values = c(my_cols[6:7], my_cols[1], my_cols[3], my_cols[8]))+
-  scale_fill_manual (values = alpha(c(my_cols[6:7], my_cols[1], my_cols[3], my_cols[8]), .4))+
+  scale_color_manual(values = c(my_cols[7:8], my_cols[1], my_cols[3], my_cols[6]))+
+  scale_fill_manual (values = alpha(c(my_cols[7:8], my_cols[1], my_cols[3], my_cols[6]), .4))+
   labs(x = NULL,
        y= "# of times seeded",
        fill = "Functional group")+
   guides(fill = 
            guide_legend(override.aes = 
-                          list(color = c(my_cols[6:7], my_cols[1], my_cols[3], my_cols[8])
+                          list(color = c(my_cols[7:8], my_cols[1], my_cols[3], my_cols[6])
                                )),
          color = FALSE)+
   theme_bw()+
   theme(legend.background = element_rect(color = "black"),
-        legend.text  = element_text(family = "Fira Sans"),
-        legend.title = element_text(family = "Fira Sans"),
-        axis.text.x  = element_text(size = rel(1.1)),
-        axis.text.y  = element_text(size = rel(1.1), face = "italic", family = "Fira Sans"),
-        axis.title   = element_text(size = rel(1.15), family = "Fira Sans"),
-        plot.title   = element_text(size = rel(1.3), hjust = 0.5, face= "bold", 
-                                    family = "Fira Sans"))
+        legend.text  = element_text(),
+        legend.title = element_text(),
+        axis.text.x  = element_text(size = 12),
+        axis.text.y  = element_text(size = 12, 
+                                    face = "italic"),
+        axis.title   = element_text(size = 13),
+        plot.title   = element_text(size = 14, hjust = 0.5, face= "bold"))
+always_p
 
-ggsave(filename = "always_detected.png", always_p, dpi = 600, width = 7, height = 5)
+ggsave(filename = "always_detected.png", always_p, dpi = 600, width = 8, height = 6)
 
 never_p <- never %>%
   ggplot(aes(reorder(full_name, timesSeeded), timesSeeded, 
@@ -189,36 +192,36 @@ never_p <- never %>%
   geom_bar(stat = "identity", size = 1)+
   coord_flip()+
   theme_bw()+
-  scale_color_manual(values = c(my_cols[6], 
+  scale_color_manual(values = c(my_cols[8], 
                                 my_cols[1], 
                                 my_cols[3], 
-                                my_cols[8]))+
-  scale_fill_manual (values = alpha(c(my_cols[6], 
+                                my_cols[6]))+
+  scale_fill_manual (values = alpha(c(my_cols[8], 
                                       my_cols[1], 
                                       my_cols[3], 
-                                      my_cols[8]), .4))+
+                                      my_cols[6]), .4))+
   labs(x = NULL,
        y = "# of times seeded",
        fill = "Functional group")+
   guides(fill = 
            guide_legend(override.aes = 
-                          list(color = c(my_cols[6], 
+                          list(color = c(my_cols[8], 
                                          my_cols[1], 
                                          my_cols[3], 
-                                         my_cols[8])
+                                         my_cols[6])
                           )),
          color = FALSE)+
   theme(legend.background = element_rect(color = "black"),
-        axis.text.x = element_text(size = 12, family = "Fira Sans"),
-        axis.text.y = element_text(size = 12, face = "italic", family = "Fira Sans"),
-        axis.title  = element_text(size = 14, famil = "Fira Sans"),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12, face = "italic"),
+        axis.title  = element_text(size = 14),
         plot.title  = element_text(size = rel(1.3), hjust = 0.5, face= "bold"),
-        legend.text = element_text(size = 12, family = "Fira Sans"),
-        legend.title = element_text(size = 14, family = "Fira Sans"))
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 14))
+never_p
+ggsave("never_detected.png", never_p, dpi = 600, width = 9, height = 8)
 
-ggsave("never_detected.png", never_p, dpi = 600, width = 6, height = 8)
-
-# as an aside, how many praire species did we find ....
+# as an aside, how many praire species did we find ...
 
 pr_found %>%
   select(speciesID) %>%

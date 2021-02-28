@@ -219,6 +219,7 @@ summary(c32)
 rand(c32)
 performance::r2(c32)
 performance::check_model(c32)
+performance::compare_performance(c30, c31, c32, c33, c34)
 confint.merMod(c32)
 
 # ---- 3. Prairie forbs ------------------------------------------------------
@@ -308,6 +309,7 @@ rand(l2)      # site isn't significant
 confint.merMod(l2)
 performance::r2(l2)
 performance::check_model(l2)
+performance::compare_performance(l0, l1, l2)
 
 l2_log <- lmer(log(leg_pi) ~ year + species_seeded + age_yrs + 
                  log(hectares_in_strips) + 
@@ -522,9 +524,11 @@ wa4 <- lmer(wa_pi_logit ~ year + species_seeded +
 anova(wa4, wa3)            # keep!
 
 # final model is wa3
+summary(wa3)
 summary(wa3b)
 anova(wa3b)
 confint.merMod(wa3)
+performance::compare_performance(wa0, wa1, wa2, wa3, wa4, wa3b)
 
 # age slope = -0.36402
 exp(-0.36402)

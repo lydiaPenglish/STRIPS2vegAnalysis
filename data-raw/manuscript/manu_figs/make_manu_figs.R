@@ -46,7 +46,7 @@ site_info_tab <-
          sampling_year = ifelse(siteID %in% c("ARM", "MCN", "RHO", "WOR", "WHI"), 
                                 "2019", "2018 & 2019"),
          season_seeded = stringr::str_to_title(season_seeded)) %>%
-  select(numID, sampling_year, species_seeded, age_yrs, hectares_in_strips,
+  select(siteID, numID, sampling_year, n_strips, species_seeded, age_yrs, hectares_in_strips,
          avg_p_a, season_seeded) %>%
   filter(!(is.na(numID)))
 

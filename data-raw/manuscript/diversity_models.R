@@ -91,6 +91,8 @@ g4 <- lmer(gamma_div ~ year + species_seeded +
              (1|siteID), data = site_div_rich)
 anova(g3, g4)  # keep! 
 
+performance::compare_performance(g_all, g1, g2, g3, g4)
+
 # final model = g3
 resid_panel(g3)
 summary(g3)
@@ -215,6 +217,8 @@ a2 <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) +
 anova(a2, a1)
 anova(a2)
 
+performance::compare_performance(a_all, a1, a2)
+
 # keep everything else, model is a2
 resid_panel(a2)
 summary(a2)
@@ -310,6 +314,7 @@ anova(p1, p2) # out!
 anova(p2)
 
 # p2 is the final model 
+performance::compare_performance(p0, p1, p2, p_log)
 summary(p2)
 confint.merMod(p2)
 exp(0.017500)   
@@ -468,6 +473,8 @@ anova(ap2)
 ap3 <- lmer(p_rich ~ year + species_seeded +
               (1|quadratID:siteID) + (1|siteID), quad_div_rich)
 anova(ap3, ap2) # keep season
+
+#final model = ap2
 anova(ap2)
 summary(ap2)
 
@@ -531,6 +538,7 @@ anova(wp3)
 summary(wp3)
 confint.merMod(wp3)
 rand(wp3)        # both random effects matter
+performance::compare_performance(wp_all, wp0, wp1, wp2, wp3)
 
 resid_panel(wp3)
 performance::r2(wp3)     # ha, fixed effects explain very little...
