@@ -150,7 +150,8 @@ site_div_rich <-
   left_join(site_rich) %>%
   left_join(site_p_rich) %>%
   left_join(site_w_rich) %>%
-  left_join(all_site_info)
+  left_join(all_site_info) %>%
+  mutate(evenness = log(gamma_div)/log(rich))
 
 usethis::use_data(site_div_rich, overwrite = TRUE)
 

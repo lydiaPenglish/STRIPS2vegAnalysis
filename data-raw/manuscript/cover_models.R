@@ -1,9 +1,9 @@
 # Analyses regarding the cover of different functional groups 
 # The groupings are:
-# 1. All prairie spp
-# 2. Prairie grasses (and then C3 vs C4 grass)
-# 3. Prairie forbs (and then leguminous vs non-leguminous forbs)
-# 4. All weedy spp
+# 1. All target spp
+# 2. All weedy spp
+# 3. Prairie grasses (and then C3 vs C4 grass)
+# 4. Prairie forbs (and then leguminous vs non-leguminous forbs)
 # 5. Perennial weeds 
 # 6. Annual weeds
 
@@ -84,7 +84,49 @@ ggResidpanel::resid_panel(p4)
 performance::compare_performance(p4, p4b)
 
 
-# ---- 2. Prairie grass -------------------------------------------------------
+# ---- 2. All weedy spp ----
+plot_dat(weedy_pi, "weed_pi_logit")
+
+w0 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
+             log(hectares_in_strips) + log(avg_p_a) + 
+             season_seeded + 
+             (1|siteID), weedy_pi)
+anova(w0)
+
+# nix age
+w1 <- lmer(weed_pi_logit ~ year + species_seeded + 
+             log(hectares_in_strips) + log(avg_p_a) + 
+             season_seeded + 
+             (1|siteID), weedy_pi)
+anova(w1, w0)   # out!
+anova(w1)
+
+# nix size
+w2 <- lmer(weed_pi_logit ~ year + species_seeded +  log(avg_p_a) + 
+             season_seeded + 
+             (1|siteID), weedy_pi)
+anova(w2, w1)       # out!
+anova(w2)
+
+# nix p-a ratio
+w3 <- lmer(weed_pi_logit ~ year + species_seeded + season_seeded +  
+             (1|siteID), weedy_pi)
+anova(w2, w3)       # out!
+anova(w3)
+
+# nix season
+w4 <-  lmer(weed_pi_logit ~ year + species_seeded +
+              (1|siteID), weedy_pi)
+anova(w3, w4)       # out!
+
+# w4 is the final model
+summary(w4)
+anova(w4)
+performance::check_model(w4)
+performance::r2(w4)
+rand(w4)
+
+# ---- 3. Prairie grass -------------------------------------------------------
 
 # A. all prairie grass
 
@@ -222,7 +264,7 @@ performance::check_model(c32)
 performance::compare_performance(c30, c31, c32, c33, c34)
 confint.merMod(c32)
 
-# ---- 3. Prairie forbs ------------------------------------------------------
+# ---- 4. Prairie forbs ------------------------------------------------------
 plot_dat(prairie_pi, "pf_pi_logit")
 # looks like age and seed mix rich are close to being sig?
 
@@ -375,48 +417,6 @@ nl4_log2 <- lmer(nl_pi_logit ~ year+species_seeded +
                    (1|siteID), prairie_pi)
 
 anova(nl4_log, nl4_log2) # interaction ns. 
-
-# ---- 4. All weedy spp ----
-plot_dat(weedy_pi, "weed_pi_logit")
-
-w0 <- lmer(weed_pi_logit ~ year + species_seeded + age_yrs + 
-             log(hectares_in_strips) + log(avg_p_a) + 
-             season_seeded + 
-             (1|siteID), weedy_pi)
-anova(w0)
-
-# nix age
-w1 <- lmer(weed_pi_logit ~ year + species_seeded + 
-             log(hectares_in_strips) + log(avg_p_a) + 
-             season_seeded + 
-             (1|siteID), weedy_pi)
-anova(w1, w0)   # out!
-anova(w1)
-
-# nix size
-w2 <- lmer(weed_pi_logit ~ year + species_seeded +  log(avg_p_a) + 
-             season_seeded + 
-             (1|siteID), weedy_pi)
-anova(w2, w1)       # out!
-anova(w2)
-
-# nix p-a ratio
-w3 <- lmer(weed_pi_logit ~ year + species_seeded + season_seeded +  
-             (1|siteID), weedy_pi)
-anova(w2, w3)       # out!
-anova(w3)
-
-# nix season
-w4 <-  lmer(weed_pi_logit ~ year + species_seeded +
-              (1|siteID), weedy_pi)
-anova(w3, w4)       # out!
-
-# w4 is the final model
-summary(w4)
-anova(w4)
-performance::check_model(w4)
-performance::r2(w4)
-rand(w4)
 
 # ---- 5. Perennial weeds ----
 # both ok diagnostically, but logit fits better

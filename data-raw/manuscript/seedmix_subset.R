@@ -67,7 +67,7 @@ sub_div_g %>%
   geom_col()
 
 #        size - NS
-w1 <- lm(log(w_rich) ~ log(acres_in_strips), sub_div_g)
+w1 <- lm(log(w_rich) ~ log(hectares_in_strips), sub_div_g)
 summary(w1)
 
 #        age - NS
@@ -183,48 +183,49 @@ pairs(ww3_m)        # fall and spring the same, summer different from both
 ww4 <- lm(weed_pi_logit ~ avg_p_a, sub_cov_w)
 anova(ww4)
 
-# 5. Annual weeds - NS for all 
+# 5. Weedy_grasses 
 sub_cov_w %>%
-  ggplot(aes(siteID, wa_pi))+
+  ggplot(aes(siteID, w_grass_pi))+
   geom_col()
 
 #         size - NS
-wa1 <- lm(wa_pi_logit ~ log(acres_in_strips), sub_cov_w)
-summary(wa1)
+wg1 <- lm(wg_pi_logit ~ log(hectares_in_strips), sub_cov_w)
+summary(wg1)
 
 #         age - NS
-wa2 <- lm(wa_pi_logit ~ age_yrs, sub_cov_w)
-summary(wa2)
+wg2 <- lm(wg_pi_logit ~ age_yrs, sub_cov_w)
+summary(wg2)
+
+#         season - just barely sig
+wg3 <- lm(wg_pi_logit ~ season_seeded, sub_cov_w)
+summary(wg3)
+anova(wg3)
+
+#       perim:area - NS
+wg4 <- lm(wg_pi_logit ~ avg_p_a, sub_cov_w)
+anova(wg4)
+
+# 6. Weedy forbs
+sub_cov_w %>%
+  ggplot(aes(siteID, w_forb_pi))+
+  geom_col()
+
+#         size - NS
+wf1 <- lm(wf_pi_logit ~ log(hectares_in_strips), sub_cov_w)
+summary(wf1)
+
+#         age - NS
+wf2 <- lm(wf_pi_logit ~ age_yrs, sub_cov_w)
+summary(wf2)
 
 #         season - NS
-wa3 <- lm(wa_pi_logit ~ season_seeded, sub_cov_w)
-summary(wa3)
+wf3 <- lm(wf_pi_logit ~ season_seeded, sub_cov_w)
+summary(wf3)
+anova(wf3)
 
 #       perim:area - NS
-wa4 <- lm(wa_pi_logit ~ avg_p_a, sub_cov_w)
-anova(wa4)
-
-# 6. Perennial weeds
-sub_cov_w %>%
-  ggplot(aes(siteID, wp_pi))+
-  geom_col()
-
-#         size - NS
-wp1 <- lm(wp_pi_logit ~ log(acres_in_strips), sub_cov_w)
-summary(wp1)
-
-#         age - NS
-wp2 <- lm(wp_pi_logit ~ age_yrs, sub_cov_w)
-summary(wp2)
-
-#         season - almost but not sig
-wp3 <- lm(wp_pi_logit ~ season_seeded, sub_cov_w)
-summary(wp3)
-anova(wp3)
-
-#       perim:area - NS
-wp4 <- lm(wp_pi_logit ~ avg_p_a, sub_cov_w)
-anova(wp4)
+wf4 <- lm(wf_pi_logit ~ avg_p_a, sub_cov_w)
+anova(wf4)
 
 # Make figures ------------------------------------------------------
 # 1. Prairie and weedy species richness

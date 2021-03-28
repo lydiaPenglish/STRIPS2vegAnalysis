@@ -48,6 +48,14 @@ weed_perenn <- species_list %>% # 5 letter codes for weedy species
   filter(stringr::str_detect(group, "^weedy"), life_cycle == "perennial" | life_cycle == "biennial") %>%
   select(speciesID) %>%
   unlist()
+weed_grass <- species_list %>% # 5 letter codes for weedy species
+  filter(group == "weedy C3 grass" | group == "weedy C4 grass") %>%
+  select(speciesID) %>%
+  unlist()
+weedy_forbs <-  species_list %>% # 5 letter codes for weedy species
+  filter(group == "weedy forb") %>%
+  select(speciesID) %>%
+  unlist()
 nat_codes <- species_list %>% # 5 letter codes for weedy species
   filter(stringr::str_detect(group, "^prairie")) %>%
   select(speciesID) %>%
@@ -82,6 +90,8 @@ forb_cov    <- get_cov(group = nat_forbs) %>% left_join(all_site_info)
 legume_cov  <- get_cov(group = legumes) %>% left_join(all_site_info)
 nonleg_cov  <- get_cov(group = nl_forbs) %>% left_join(all_site_info)
 nat_cov     <- get_cov(group = nat_codes) %>% left_join(all_site_info)
+w_grass_cov <- get_cov(group = weed_grass) %>% left_join(all_site_info)
+w_forb_cov  <- get_cov(group = weedy_forbs) %>% left_join(all_site_info) 
 pw_cov      <- get_cov(group = weed_perenn) %>% left_join(all_site_info)
 aw_cov      <- get_cov(group = weed_annuals) %>% left_join(all_site_info)
 weed_cov    <- get_cov(group = weeds) %>% left_join(all_site_info)
@@ -152,10 +162,24 @@ weedy_pi <-
     summarize(wp_cov = sum(cov)) %>%
     mutate(wp_pi = wp_cov/total_cover)
 ) %>%
+  left_join(., 
+            veg_site %>%
+              filter(speciesID %in% weed_grass) %>%
+              group_by(year, siteID, total_cover) %>%
+              summarize(w_grass_cov = sum(cov)) %>%
+              mutate(w_grass_pi = w_grass_cov/total_cover)) %>%
+  left_join(., 
+            veg_site %>%
+              filter(speciesID %in% weedy_forbs) %>%
+              group_by(year, siteID, total_cover) %>%
+              summarize(w_forb_cov = sum(cov)) %>%
+              mutate(w_forb_pi = w_forb_cov/total_cover)) %>%
   mutate(weed_cov = wa_cov + wp_cov,
          weed_pi  = weed_cov/total_cover) %>%
   left_join(all_site_info) %>%
   mutate(wa_pi_logit   = car::logit(wa_pi),
          wp_pi_logit   = car::logit(wp_pi),
+         wg_pi_logit   = car::logit(w_grass_pi),
+         wf_pi_logit   = car::logit(w_forb_pi),
          weed_pi_logit = car::logit(weed_pi))
 usethis::use_data(weedy_pi, overwrite = TRUE)

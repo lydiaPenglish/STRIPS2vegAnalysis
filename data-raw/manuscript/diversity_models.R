@@ -135,133 +135,6 @@ site_div_rich %>%
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12))
 
-
-# Beta diversity models ---------------------------------------------
-hist(site_div_rich$beta_div)
-
-b_all <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
-                age_yrs + season_seeded + 
-                (1|siteID), data = site_div_rich)
-summary(b_all)
-resid_panel(b_all)
-anova(b_all)
-
-# nix p_a ratio
-
-b0 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
-             age_yrs + season_seeded + 
-             (1|siteID), data = site_div_rich)
-anova(b0, b_all)   # out!
-anova(b0)
-
-# nix age
-b1 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
-             season_seeded + (1|siteID), data = site_div_rich)
-anova(b_all, b1) # out!
-anova(b1)
-
-# nix size
-b2 <- lmer(beta_div ~ year + species_seeded + 
-             season_seeded + (1|siteID), data = site_div_rich)
-anova(b2, b1) # oooof, should nearly keep but out! 
-anova(b2)
-
-# nix season
-b3 <- lmer(beta_div ~ year + species_seeded + 
-             (1|siteID), data = site_div_rich)
-anova(b3, b2) # out! 
-
-performance::compare_performance(b_all, b1, b2, b3)
-
-# final model is b3
-resid_panel(b3)
-summary(b3)
-confint.merMod(b3)
-rand(b3) # random effect matters
-performance::r2(b3)
-
-#plot
-site_div_rich %>%
-  filter(year == "2019") %>%
-  ggplot(aes(species_seeded, beta_div))+
-  geom_point(alpha = 0.5, size = 2)+
-  geom_abline(intercept = 1.59061, slope = 0.04548, size = 1.5, color = "#C669D5") +
-  theme_bw()+
-  labs(y = "Beta Diversity",
-       x = "Seed mix richness")+
-  theme(axis.title = element_text(size = 14),
-        axis.text = element_text(size = 12))
-
-# Alpha diversity models ------------------------------------------------------
-hist(quad_div_rich$alpha_div)
-
-a_all <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
-                age_yrs + season_seeded + 
-                (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
-resid_panel(a_all)
-summary(a_all)
-anova(a_all)
-
-# nix season seeded
-a1 <-  lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) + 
-              age_yrs +
-              (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
-anova(a_all, a1) # out
-anova(a1)
-
-# nix p_a ratio
-
-a2 <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) +  
-             age_yrs +
-             (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
-anova(a2, a1)
-anova(a2)
-
-performance::compare_performance(a_all, a1, a2)
-
-# keep everything else, model is a2
-resid_panel(a2)
-summary(a2)
-confint.merMod(a2) 
-performance::r2(a2)  # model explains less than gamma/beta diversity models
-rand(a2)             # both random effects matter
-
-0.710130 * log(2)    # slope estimate for area, getting doubling effect
-confint.merMod(a2) * log(2)
-
-
-# plotting slope estimates
-xs = c(-.7,0.4,1.61)
-intercept <- (9.450204 + 0.120361)
-size_sl <- 0.710130
-intercept + size_sl*xs[1]
-intercept + size_sl*xs[2]
-intercept + size_sl*xs[3]
-
-slopes <- data.frame(int = c(9.073474, 9.854617, 10.71387),
-                     sl  = c(-0.627538, -0.627538, -0.627538),
-                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
-
-# plot 
-quad_div_rich %>%
-  filter(year == "2019" & !(is.na(species_seeded))) %>%
-  group_by(siteID) %>%
-  mutate(avg_alpha = mean(alpha_div)) %>%
-  ggplot(aes(age_yrs, alpha_div))+
-  geom_point(alpha = 0.15)+
-  geom_point(aes(age_yrs, avg_alpha), size = 4)+
-  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id), 
-              size = 1.5) +
-  scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
-                     guide = guide_legend(reverse = TRUE))+
-  theme_bw()+
-  labs(y = "Alpha Diversity",
-       x = "Age (years)",
-       color = NULL)+
-  theme(axis.title = element_text(size = 14),
-        axis.text = element_text(size = 12),
-        legend.text = element_text(size = 12))
-
 # Gamma prairie richness ------------------------------------------------------
 # aka Richness of the prairie community at the site-level
 hist(site_div_rich$p_rich)
@@ -437,6 +310,242 @@ site_div_rich %>%
        y = "Weedy species richness")+
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+# Variation across a site ------------------------------------------------------
+
+# CV of diversity
+
+alpha_cv <- quad_div_rich %>%
+  group_by(year, siteID) %>%
+  summarize(alpha_avg = mean(alpha_div),
+            alpha_sd = sd(alpha_div),
+            alpha_cv = alpha_sd/alpha_avg)
+
+# Joining
+
+site_div_rich3 <- left_join(site_div_rich, alpha_cv)
+
+site_div_rich3 %>%
+  ggplot() +
+  geom_point(aes(evenness, alpha_cv))+
+  geom_label(aes(evenness, alpha_cv, label = siteID))+
+  geom_smooth(aes(evenness, alpha_cv), method = "lm")+
+  facet_wrap(~year)
+
+# Just looking at cv
+hist(car::logit(site_div_rich3$alpha_cv))
+
+cv_all <- lmer(car::logit(alpha_cv) ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                age_yrs + season_seeded + 
+                (1|siteID), data = site_div_rich3)
+summary(cv_all)
+
+# nix season
+cv0 <- lmer(car::logit(alpha_cv) ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+             age_yrs + 
+             (1|siteID), data = site_div_rich3)
+anova(cv_all, cv0) # out!
+summary(cv0)
+
+# nix age
+cv1 <- lmer(car::logit(alpha_cv) ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+              (1|siteID), data = site_div_rich3)
+anova(cv1, cv0) #out!
+summary(cv1)
+
+# nix p_a
+
+cv2 <- lmer(car::logit(alpha_cv) ~ year + species_seeded + log(hectares_in_strips) + 
+              (1|siteID), data = site_div_rich3)
+anova(cv2, cv1) #technically out
+summary(cv2)
+
+# try nixing size 
+e3 <-  lmer(evenness ~ year + species_seeded + 
+              (1|siteID), data = site_div_rich3)
+anova(e2, e3) # keep!
+summary(e3)
+
+# final model is e2 
+resid_panel(e1)
+summary(e1)
+confint.merMod(e1)
+rand(e1) # random effect matters
+performance::r2(e1)
+
+# Just looking at evenness 
+
+site_div_rich3 %>%
+  ggplot(aes(log(hectares_in_strips), evenness))+
+  geom_point()+
+  facet_wrap(~year)
+
+e_all <- lmer(car::logit(evenness) ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+             age_yrs + season_seeded + 
+             (1|siteID), data = site_div_rich3)
+summary(e_all)
+
+# nix p_a
+e0 <- lmer(car::logit(evenness) ~ year + species_seeded + log(hectares_in_strips) + 
+                age_yrs + season_seeded + 
+                (1|siteID), data = site_div_rich3)
+anova(e_all, e0) # out!
+summary(e0)
+
+# nix age
+e1 <- lmer(car::logit(evenness) ~ year + species_seeded + log(hectares_in_strips) + 
+              season_seeded + 
+             (1|siteID), data = site_div_rich3)
+anova(e1, e0) #out!
+summary(e1)
+
+# trying nixing season_seeded
+
+e2 <- lmer(car::logit(evenness) ~ year + species_seeded + log(hectares_in_strips) + 
+             (1|siteID), data = site_div_rich3)
+anova(e2, e1) #technically out
+summary(e2)
+
+# try nixing size 
+e3 <-  lmer(evenness ~ year + species_seeded + 
+              (1|siteID), data = site_div_rich3)
+anova(e2, e3) # keep!
+summary(e3)
+
+# final model is e2 
+resid_panel(e1)
+summary(e1)
+confint.merMod(e1)
+rand(e1) # random effect matters
+performance::r2(e1)
+
+hist(car::logit(site_div_rich3$evenness))
+
+# Beta diversity models ---------------------------------------------
+hist(site_div_rich$beta_div)
+
+b_all <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                age_yrs + season_seeded + 
+                (1|siteID), data = site_div_rich)
+summary(b_all)
+resid_panel(b_all)
+anova(b_all)
+
+# nix p_a ratio
+
+b0 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
+             age_yrs + season_seeded + 
+             (1|siteID), data = site_div_rich)
+anova(b0, b_all)   # out!
+anova(b0)
+
+# nix age
+b1 <- lmer(beta_div ~ year + species_seeded + log(hectares_in_strips) + 
+             season_seeded + (1|siteID), data = site_div_rich)
+anova(b_all, b1) # out!
+anova(b1)
+
+# nix size
+b2 <- lmer(beta_div ~ year + species_seeded + 
+             season_seeded + (1|siteID), data = site_div_rich)
+anova(b2, b1) # oooof, should nearly keep but out! 
+anova(b2)
+
+# nix season
+b3 <- lmer(beta_div ~ year + species_seeded + 
+             (1|siteID), data = site_div_rich)
+anova(b3, b2) # out! 
+
+performance::compare_performance(b_all, b1, b2, b3)
+
+# final model is b3
+resid_panel(b3)
+summary(b3)
+confint.merMod(b3)
+rand(b3) # random effect matters
+performance::r2(b3)
+
+#plot
+site_div_rich %>%
+  filter(year == "2019") %>%
+  ggplot(aes(species_seeded, beta_div))+
+  geom_point(alpha = 0.5, size = 2)+
+  geom_abline(intercept = 1.59061, slope = 0.04548, size = 1.5, color = "#C669D5") +
+  theme_bw()+
+  labs(y = "Beta Diversity",
+       x = "Seed mix richness")+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
+
+# Alpha diversity models ------------------------------------------------------
+hist(quad_div_rich$alpha_div)
+
+a_all <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) +
+                age_yrs + season_seeded + 
+                (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
+resid_panel(a_all)
+summary(a_all)
+anova(a_all)
+
+# nix season seeded
+a1 <-  lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) + log(avg_p_a) + 
+              age_yrs +
+              (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
+anova(a_all, a1) # out
+anova(a1)
+
+# nix p_a ratio
+
+a2 <- lmer(alpha_div ~ year + species_seeded + log(hectares_in_strips) +  
+             age_yrs +
+             (1|siteID) + (1|quadratID:siteID), data = quad_div_rich)
+anova(a2, a1)
+anova(a2)
+
+performance::compare_performance(a_all, a1, a2)
+
+# keep everything else, model is a2
+resid_panel(a2)
+summary(a2)
+confint.merMod(a2) 
+performance::r2(a2)  # model explains less than gamma/beta diversity models
+rand(a2)             # both random effects matter
+
+0.710130 * log(2)    # slope estimate for area, getting doubling effect
+confint.merMod(a2) * log(2)
+
+
+# plotting slope estimates
+xs = c(-.7,0.4,1.61)
+intercept <- (9.450204 + 0.120361)
+size_sl <- 0.710130
+intercept + size_sl*xs[1]
+intercept + size_sl*xs[2]
+intercept + size_sl*xs[3]
+
+slopes <- data.frame(int = c(9.073474, 9.854617, 10.71387),
+                     sl  = c(-0.627538, -0.627538, -0.627538),
+                     id  = c("0.5 ha", "1.5 ha", "5 ha"))
+
+# plot 
+quad_div_rich %>%
+  filter(year == "2019" & !(is.na(species_seeded))) %>%
+  group_by(siteID) %>%
+  mutate(avg_alpha = mean(alpha_div)) %>%
+  ggplot(aes(age_yrs, alpha_div))+
+  geom_point(alpha = 0.15)+
+  geom_point(aes(age_yrs, avg_alpha), size = 4)+
+  geom_abline(data = slopes, aes(intercept = int, slope = sl, color = id), 
+              size = 1.5) +
+  scale_color_manual(values = c("#5F1343", "#A41393", "#C669D5"),
+                     guide = guide_legend(reverse = TRUE))+
+  theme_bw()+
+  labs(y = "Alpha Diversity",
+       x = "Age (years)",
+       color = NULL)+
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
         legend.text = element_text(size = 12))
 
 # Alpha prairie richness -------------------------------------------
